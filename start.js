@@ -190,14 +190,8 @@ var Start = /** @class */ (function () {
                                 files.forEach(function (fpath) {
                                     console.log(fpath);
                                     var file = fs_1.default.readFileSync('patchs/' + fpath, 'utf8');
-                                    file = file.replace("FC\\KhasanovSr", "sarvar");
-                                    file = file.replace("FC\\KhasanovSr", "sarvar");
-                                    file = file.replace("FC\\KhasanovSr", "sarvar");
-                                    file = file.replace("FC\\KhasanovSr", "sarvar");
-                                    file = file.replace("KhasanovSr@ufa.uralsib.ru", "sarkhas@mail.ru");
-                                    file = file.replace("KhasanovSr@ufa.uralsib.ru", "sarkhas@mail.ru");
-                                    file = file.replace("KhasanovSr@ufa.uralsib.ru", "sarkhas@mail.ru");
-                                    file = file.replace("KhasanovSr@ufa.uralsib.ru", "sarkhas@mail.ru");
+                                    file = file.replace("ssssssssssssssssss", "sarvar");
+                                    file = file.replace("ssssssssssssssssssssssssssssssss", "sarkhas@mail.ru");
                                     newFile += file + '__FILES_SPLITTER__';
                                 });
                                 fs_1.default.writeFileSync("result.txt", newFile, 'utf8');
