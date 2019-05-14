@@ -1,0 +1,1016 @@
+From 438f62d9c08a8fabd2a80338ab59597be2dc948e Mon Sep 17 00:00:00 2001
+From: "sarvar" <sarkhas@mail.ru>
+Date: Tue, 14 May 2019 16:52:38 +0500
+Subject: [PATCH 1/2] animations
+
+---
+ frontend/angular.json                         |   8 +-
+ ...nimtest-toggle-list-item-show.animation.ts |  92 ++++++++++++++
+ .../toggle-list-item-show.animation.ts        | 113 ++++++++++++++++++
+ .../animations/toggle-menu-show.animation.ts  | 103 ++++++++++++++++
+ .../src/app/animtest/animtest.component.css   |   0
+ .../src/app/animtest/animtest.component.html  |  11 ++
+ .../src/app/animtest/animtest.component.ts    |  57 +++++++++
+ frontend/src/app/app-routing.module.ts        |   4 +-
+ frontend/src/app/app.module.ts                |  14 ++-
+ .../app/menu-table/menu-table.component.ts    |   8 ++
+ frontend/src/app/menu/menu.component.ts       |   8 ++
+ .../src/app/test-card/test-card.component.css |   0
+ .../app/test-card/test-card.component.html    |  12 ++
+ .../src/app/test-card/test-card.component.ts  |  33 +++++
+ .../src/app/test-card/test-card.directive.ts  |   8 ++
+ .../src/app/test-list/test-list.component.css |   0
+ .../app/test-list/test-list.component.html    |  18 +++
+ .../src/app/test-list/test-list.component.ts  |  67 +++++++++++
+ frontend/src/app/test-list/testitem.ts        |  10 ++
+ .../src/app/test-menu/test-menu.component.css |  21 ++++
+ .../app/test-menu/test-menu.component.html    |  14 +++
+ .../src/app/test-menu/test-menu.component.ts  |  40 +++++++
+ frontend/src/polyfills.ts                     |   2 +-
+ 23 files changed, 632 insertions(+), 11 deletions(-)
+ create mode 100644 frontend/src/app/animations/animtest-toggle-list-item-show.animation.ts
+ create mode 100644 frontend/src/app/animations/toggle-list-item-show.animation.ts
+ create mode 100644 frontend/src/app/animations/toggle-menu-show.animation.ts
+ create mode 100644 frontend/src/app/animtest/animtest.component.css
+ create mode 100644 frontend/src/app/animtest/animtest.component.html
+ create mode 100644 frontend/src/app/animtest/animtest.component.ts
+ create mode 100644 frontend/src/app/test-card/test-card.component.css
+ create mode 100644 frontend/src/app/test-card/test-card.component.html
+ create mode 100644 frontend/src/app/test-card/test-card.component.ts
+ create mode 100644 frontend/src/app/test-card/test-card.directive.ts
+ create mode 100644 frontend/src/app/test-list/test-list.component.css
+ create mode 100644 frontend/src/app/test-list/test-list.component.html
+ create mode 100644 frontend/src/app/test-list/test-list.component.ts
+ create mode 100644 frontend/src/app/test-list/testitem.ts
+ create mode 100644 frontend/src/app/test-menu/test-menu.component.css
+ create mode 100644 frontend/src/app/test-menu/test-menu.component.html
+ create mode 100644 frontend/src/app/test-menu/test-menu.component.ts
+
+diff --git a/frontend/angular.json b/frontend/angular.json
+index e83979c..b781038 100644
+--- a/frontend/angular.json
++++ b/frontend/angular.json
+@@ -30,9 +30,7 @@
+               "src/styles.css",
+               "node_modules/bootstrap/dist/css/bootstrap.min.css"
+             ],
+-            "scripts": [
+-              "./node_modules/hammerjs/hammer.min.js"
+-            ],
++            "scripts": [],
+             "es5BrowserSupport": true
+           },
+           "configurations": {
+@@ -89,9 +87,7 @@
+             "styles": [
+               "src/styles.sass"
+             ],
+-            "scripts": [
+-              "./node_modules/hammerjs/hammer.min.js"
+-            ],
++            "scripts": [],
+             "assets": [
+               "src/favicon.ico",
+               "src/assets"
+diff --git a/frontend/src/app/animations/animtest-toggle-list-item-show.animation.ts b/frontend/src/app/animations/animtest-toggle-list-item-show.animation.ts
+new file mode 100644
+index 0000000..d761286
+--- /dev/null
++++ b/frontend/src/app/animations/animtest-toggle-list-item-show.animation.ts
+@@ -0,0 +1,92 @@
++import {animate, animateChild, group, query, style, transition, trigger} from "@angular/animations";
++import {ToggleListItemShowAnimation} from "./toggle-list-item-show.animation";
++
++
++export class AnimtestToggleListItemShowAnimation extends ToggleListItemShowAnimation {
++    protected itemChildrenListStates() {
++        return [
++            query('.test-card-animate-hidden', [style(this.itemChilderHiddenState())]),
++            query('.test-card-animate-logo', [style(this.itemLogoListState())]),
++            query('.test-card-animate-name', [style(this.itemNameListState())]),
++        ];
++    }
++
++    protected itemChildrenCartStates() {
++        return [
++            query('.test-card-animate-hidden', [style(this.itemChilderHiddenState())]),
++            query('.test-card-animate-logo', [style(this.itemLogoCartState())]),
++            query('.test-card-animate-name', [style(this.itemNameCartState())]),
++        ];
++    }
++
++    protected itemChildrenToCartAnimations() {
++        return [
++            query('.test-card-animate-logo', [
++                animate(this.timings, style(this.itemLogoCartState())),
++            ]),
++            query('.test-card-animate-name', [
++                animate(this.timings, style(this.itemNameCartState()))
++            ]),
++        ];
++    }
++
++    protected itemChildrenToListAnimations() {
++        return [
++            query('.test-card-animate-logo', [
++                animate(this.timings, style(this.itemLogoListState())),
++            ]),
++            query('.test-card-animate-name', [
++                animate(this.timings, style(this.itemNameListState())),
++            ]),
++        ];
++    }
++
++    protected itemChilderHiddenState() {
++        return {opacity: 0};
++    }
++
++    protected itemLogoListState() {
++        return {
++            width: '40px',
++            height: '40px',
++            'vertical-align': 'top',
++            margin: '12px 12px 12px 45px',
++        };
++    }
++
++    protected itemNameListState() {
++        return {
++            position: 'absolute',
++            top: '12px',
++            left: '110px',
++            'font-size': '1rem',
++            'font-weight': '400',
++            'line-height': '1.5',
++            color: '#212529',
++        };
++    }
++
++    protected itemLogoCartState() {
++        return {
++            width: '150px',
++            height: '150px',
++            margin: '0',
++        };
++    }
++
++    protected itemNameCartState() {
++        return {
++            top: '150px',
++            left: '0px',
++            margin: '0 0 .5rem 0',
++            'vertical-align': 'top',
++            'font-size': '2.5rem',
++            'font-weight': '500',
++            'line-height': '1.2',
++            color: '#212529',
++        };
++    }
++}
++
++export const animtestToggleListItemShowAnimation = AnimtestToggleListItemShowAnimation.build();
++
+diff --git a/frontend/src/app/animations/toggle-list-item-show.animation.ts b/frontend/src/app/animations/toggle-list-item-show.animation.ts
+new file mode 100644
+index 0000000..86fd517
+--- /dev/null
++++ b/frontend/src/app/animations/toggle-list-item-show.animation.ts
+@@ -0,0 +1,113 @@
++import {animate, animateChild, group, query, style, transition, trigger} from "@angular/animations";
++
++
++export class ToggleListItemShowAnimation {
++    protected timings: string = '150ms ease-out';
++    static build() {
++        let a = new this();
++        return trigger('toggleListItemShow', [
++            a.itemShow(),
++            a.itemHide(),
++        ]);
++    }
++
++    protected itemShow() {
++        return transition('list => card', [
++            style({position: 'relative'}),
++            query(':enter, :leave', [style(this.defaultInitState())]),
++            query(':leave', animateChild()),
++            query(':enter', [
++                style(this.itemListState()),
++            ]),
++            query(':enter', this.itemChildrenListStates()),
++            query(':enter', [
++                animate(this.timings, style(this.itemElevatedState())),
++            ]),
++            group([
++                query(':enter', [
++                    animate(this.timings, style(this.itemCartState())),
++                ]),
++                query(':enter', [group(this.itemChildrenToCartAnimations())])
++            ]),
++            query(':enter', animateChild()),
++        ]);
++    }
++
++    protected itemHide() {
++        return transition('card => list', [
++            style({position: 'relative'}),
++            query(':enter, :leave', [style(this.defaultInitState())]),
++            query(':enter', animateChild()),
++            query(':leave', [style(this.itemCartState()),]),
++            query(':leave', this.itemChildrenCartStates()),
++            group([
++                query(':leave', [group(this.itemChildrenToListAnimations())]),
++                query(':leave', [
++                    animate(this.timings, style(this.itemElevatedState())),
++                ]),
++            ]),
++            query(':leave', [
++                animate(this.timings, style(this.itemListState())),
++            ]),
++            query(':enter', animateChild()),
++        ]);
++    }
++
++    protected defaultInitState() {
++        return {
++            position: 'absolute',
++            opacity: 1,
++            width: '100%',
++            background: 'white'
++        };
++    }
++
++    protected itemListState() {
++        return {
++            opacity: 0,
++            "box-shadow": 'black 0px 0px 0px 0px',
++            width: '100%',
++            height: '63px',
++            top: '{{itemTop}}px',
++            overflow: 'hidden',
++        };
++    }
++
++    protected itemElevatedState() {
++        return {
++            opacity: 1,
++            "box-shadow": 'black 0px 0px 16px 0px',
++            top: '{{itemTop}}px',
++            width: '100%',
++            height: '63px',
++        };
++    }
++
++    protected itemCartState() {
++        return Object.assign(this.itemElevatedState(),{
++            top: '{{pageTop}}px',
++            height: '{{pageHeight}}px',
++            width: '100%',
++            overflow: 'hidden',
++        });
++    }
++
++    protected itemChildrenListStates() {
++        return [];
++    }
++
++    protected itemChildrenCartStates() {
++        return [];
++    }
++
++    protected itemChildrenToCartAnimations() {
++        return [];
++    }
++
++    protected itemChildrenToListAnimations() {
++        return [];
++    }
++}
++
++export const toggleListItemShowAnimation = ToggleListItemShowAnimation.build();
++
+diff --git a/frontend/src/app/animations/toggle-menu-show.animation.ts b/frontend/src/app/animations/toggle-menu-show.animation.ts
+new file mode 100644
+index 0000000..d3ed3cb
+--- /dev/null
++++ b/frontend/src/app/animations/toggle-menu-show.animation.ts
+@@ -0,0 +1,103 @@
++import {animate, animateChild, group, query, style, transition, trigger} from "@angular/animations";
++
++
++export class ToggleMenuShowAnimation {
++    protected timings: string = '150ms ease-out';
++    static build() {
++        let a = new this();
++        return trigger('toggleMenuShow', [
++            a.itemShow(),
++            a.itemHide(),
++        ]);
++    }
++
++    protected itemShow() {
++        return transition('closed => opened', [
++            query(':enter', [style(this.defaultInitState())]),
++            query(':enter', [
++                style(this.itemClosedState()),
++            ]),
++            query(':enter', this.itemChildrenClosedStates()),
++            group([
++                query(':enter', [
++                    animate(this.timings, style(this.itemOpenedState())),
++                ]),
++                query(':enter', [group(this.itemChildrenToOpenAnimations())])
++            ]),
++            query(':enter', animateChild()),
++        ]);
++    }
++
++    protected itemHide() {
++        return transition('opened => closed', [
++            query(':leave', [style(this.defaultInitState())]),
++            query(':leave', [style(this.itemOpenedState()),]),
++            query(':leave', this.itemChildrenOpenedStates()),
++            group([
++                query(':leave', [group(this.itemChildrenToCloseAnimations())]),
++                query(':leave', [
++                    animate(this.timings, style(this.itemClosedState())),
++                ]),
++            ]),
++        ]);
++    }
++
++    protected defaultInitState() {
++        return {};
++    }
++
++    protected itemClosedState() {
++        return {};
++    }
++
++    protected itemOpenedState() {
++        return {};
++    }
++
++    protected itemChildrenClosedStates() {
++        return [
++            query('.app-test-menu__overlay', [style(this.itemOverlayClosedState())]),
++            query('.app-test-menu__block', [style(this.itemMenuClosedState())]),
++        ];
++    }
++
++    protected itemChildrenOpenedStates() {
++        return [
++            query('.app-test-menu__overlay', [style(this.itemOverlayOpenedState())]),
++            query('.app-test-menu__block', [style(this.itemMenuOpenedState())]),
++        ];
++    }
++
++    protected itemChildrenToOpenAnimations() {
++        return [
++            query('.app-test-menu__overlay', [animate(this.timings,style(this.itemOverlayOpenedState()))]),
++            query('.app-test-menu__block', [animate(this.timings,style(this.itemMenuOpenedState()))]),
++        ];
++    }
++
++    protected itemChildrenToCloseAnimations() {
++        return [
++            query('.app-test-menu__overlay', [animate(this.timings,style(this.itemOverlayClosedState()))]),
++            query('.app-test-menu__block', [animate(this.timings,style(this.itemMenuClosedState()))]),
++        ];
++    }
++
++    protected itemOverlayClosedState() {
++        return {opacity: 0};
++    }
++
++    protected itemOverlayOpenedState() {
++        return {opacity: 0.3};
++    }
++
++    protected itemMenuClosedState() {
++        return {right: '-300px'};
++    }
++
++    protected itemMenuOpenedState() {
++        return {right: '0'};
++    }
++}
++
++export const toggleMenuShowAnimation = ToggleMenuShowAnimation.build();
++
+diff --git a/frontend/src/app/animtest/animtest.component.css b/frontend/src/app/animtest/animtest.component.css
+new file mode 100644
+index 0000000..e69de29
+diff --git a/frontend/src/app/animtest/animtest.component.html b/frontend/src/app/animtest/animtest.component.html
+new file mode 100644
+index 0000000..a3ce3c6
+--- /dev/null
++++ b/frontend/src/app/animtest/animtest.component.html
+@@ -0,0 +1,11 @@
++<div>
++    <app-test-menu></app-test-menu>
++    <div [@toggleListItemShow]="{value: viewTypeSwitch ? 'card' : 'list', params: {itemTop: itemTop, pageTop: pageYOffset, pageHeight: pageHeight}}"
++         style="height: 100%"
++         (@toggleListItemShow.start)="animStart($event)"
++         (@toggleListItemShow.done)="animDone($event)">
++        <app-test-list *ngIf="!viewTypeSwitch" [listener]="listItemClick"></app-test-list>
++        <app-test-card *ngIf="viewTypeSwitch" [item]="item" [top]="itemTop" [listener]="cardCloseClick"
++                       [style.top]="itemTop+'px'"></app-test-card>
++    </div>
++</div>
+\ No newline at end of file
+diff --git a/frontend/src/app/animtest/animtest.component.ts b/frontend/src/app/animtest/animtest.component.ts
+new file mode 100644
+index 0000000..96b56a8
+--- /dev/null
++++ b/frontend/src/app/animtest/animtest.component.ts
+@@ -0,0 +1,57 @@
++import {Component, OnInit} from '@angular/core';
++import {animate, animateChild, group, query, state, style, transition, trigger} from "@angular/animations";
++import {animtestToggleListItemShowAnimation} from "../animations/animtest-toggle-list-item-show.animation";
++
++@Component({
++    selector: 'app-pages-animtest',
++    templateUrl: './animtest.component.html',
++    styleUrls: ['./animtest.component.css'],
++    animations: [
++        animtestToggleListItemShowAnimation,
++    ]
++})
++export class AnimtestComponent implements OnInit {
++    title: string = "animtest";
++    viewTypeSwitch: boolean = false;
++    item: number[];
++    itemTop: number;
++    pageYOffset: number = 0;
++    pageHeight: number = 0;
++
++    constructor() {
++        console.log('constructor animtest');
++        this.listItemClick = this.listItemClick.bind(this);
++        this.cardCloseClick = this.cardCloseClick.bind(this);
++    }
++
++    ngOnInit() {
++    }
++
++    listItemClick(item, top) {
++        this.item = item;
++        this.itemTop = top;
++        this.pageHeight = window.innerHeight;
++        this.pageYOffset = document.getElementsByTagName('html')[0].scrollTop;
++        this.viewTypeSwitch = true;
++    }
++
++    cardCloseClick() {
++        this.viewTypeSwitch = false;
++    }
++
++    animStart(event) {
++        if (event.fromState=='list') {
++            this.pageYOffset = document.getElementsByTagName('html')[0].scrollTop;
++        } else if (event.fromState=='card') {
++            document.getElementsByTagName('html')[0].scrollTop = this.pageYOffset;
++        }
++    }
++
++    animDone(event) {
++        if (event.fromState=='list') {
++            document.getElementsByTagName('html')[0].scrollTop = 0;
++        } else if (event.fromState=='card') {
++
++        }
++    }
++}
+diff --git a/frontend/src/app/app-routing.module.ts b/frontend/src/app/app-routing.module.ts
+index 8040557..58a9a42 100644
+--- a/frontend/src/app/app-routing.module.ts
++++ b/frontend/src/app/app-routing.module.ts
+@@ -2,11 +2,13 @@ import { NgModule }             from '@angular/core';
+ import { RouterModule, Routes } from '@angular/router';
+ import {DashboardComponent} from "./dashboard/dashboard.component";
+ import {MenuAdminComponent} from "./menu-table/menu-table.component";
++import {AnimtestComponent} from "./animtest/animtest.component";
+ 
+ const routes: Routes = [
+     { path: '', pathMatch: 'full', component: DashboardComponent },
+     { path: 'dashboard', component: DashboardComponent },
+-    { path: 'menu', component: MenuAdminComponent }
++    { path: 'menu', component: MenuAdminComponent },
++    { path: 'animtest', component: AnimtestComponent }
+ ];
+ 
+ @NgModule({
+diff --git a/frontend/src/app/app.module.ts b/frontend/src/app/app.module.ts
+index c6cdb6c..671b454 100644
+--- a/frontend/src/app/app.module.ts
++++ b/frontend/src/app/app.module.ts
+@@ -17,8 +17,12 @@ import { CoreTextViewComponent } from "./core-field/views/core-text-view.compone
+ import { CoreFieldViewerDirective } from "./core-field/core-field-viewer.directive";
+ import { MockService } from "./services/mock.service";
+ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+-import { IgxGridModule } from 'igniteui-angular';
+ import {SrvcorpModule} from "../srvcorp/srvcorp.module";
++import {TestCardDirective} from "./test-card/test-card.directive";
++import {TestListComponent} from "./test-list/test-list.component";
++import {TestCardComponent} from "./test-card/test-card.component";
++import {AnimtestComponent} from "./animtest/animtest.component";
++import {TestMenuComponent} from "./test-menu/test-menu.component";
+ 
+ @NgModule({
+   declarations: [
+@@ -31,7 +35,12 @@ import {SrvcorpModule} from "../srvcorp/srvcorp.module";
+     CoreInputViewComponent,
+     CoreFieldViewerComponent,
+     CoreFieldViewerDirective,
+-    CoreTextViewComponent
++    CoreTextViewComponent,
++    TestCardDirective,
++    TestCardComponent,
++    TestListComponent,
++    TestMenuComponent,
++    AnimtestComponent
+   ],
+   entryComponents: [CoreInputViewComponent, CoreTextViewComponent],
+   imports: [
+@@ -40,7 +49,6 @@ import {SrvcorpModule} from "../srvcorp/srvcorp.module";
+     HttpClientModule,
+     FormsModule,
+     BrowserAnimationsModule,
+-    IgxGridModule,
+     SrvcorpModule
+   ],
+   providers: [
+diff --git a/frontend/src/app/menu-table/menu-table.component.ts b/frontend/src/app/menu-table/menu-table.component.ts
+index 0f5519e..b63749e 100644
+--- a/frontend/src/app/menu-table/menu-table.component.ts
++++ b/frontend/src/app/menu-table/menu-table.component.ts
+@@ -63,5 +63,13 @@ export class MenuAdminComponent implements OnInit {
+         item.icon='';
+         item.isActive=false;
+         this.menu.push(item);
++
++        item = new Menu();
++        item.id=1;
++        item.name='Animtest';
++        item.url='/animtest';
++        item.icon='';
++        item.isActive=false;
++        this.menu.push(item);
+     }
+ }
+diff --git a/frontend/src/app/menu/menu.component.ts b/frontend/src/app/menu/menu.component.ts
+index 9fffb49..abe4a32 100644
+--- a/frontend/src/app/menu/menu.component.ts
++++ b/frontend/src/app/menu/menu.component.ts
+@@ -42,5 +42,13 @@ export class MenuComponent implements OnInit {
+         item.icon='';
+         item.isActive=false;
+         this.menu.push(item);
++
++        item = new Menu();
++        item.id=1;
++        item.name='Animtest';
++        item.url='/animtest';
++        item.icon='';
++        item.isActive=false;
++        this.menu.push(item);
+     }
+ }
+diff --git a/frontend/src/app/test-card/test-card.component.css b/frontend/src/app/test-card/test-card.component.css
+new file mode 100644
+index 0000000..e69de29
+diff --git a/frontend/src/app/test-card/test-card.component.html b/frontend/src/app/test-card/test-card.component.html
+new file mode 100644
+index 0000000..6ada9e1
+--- /dev/null
++++ b/frontend/src/app/test-card/test-card.component.html
+@@ -0,0 +1,12 @@
++<div app-test-card-host>
++    <div class="test-card-animate-logo"
++         style="background-position: center;background-size: cover; border-radius: 50%; width: 150px; height: 150px;"
++         [style.background-image]="'url(assets/'+item.image+')'"></div>
++    <h1 class="test-card-animate-name">{{item.name}}</h1>
++    <div class="test-card-animate-hidden">
++        <button (click)="closeClick()">Close</button>
++        <p>
++            {{item.cat}}
++        </p>
++    </div>
++</div>
+\ No newline at end of file
+diff --git a/frontend/src/app/test-card/test-card.component.ts b/frontend/src/app/test-card/test-card.component.ts
+new file mode 100644
+index 0000000..a34d6d4
+--- /dev/null
++++ b/frontend/src/app/test-card/test-card.component.ts
+@@ -0,0 +1,33 @@
++import {Component, Input, OnInit, ViewChild} from '@angular/core';
++import {TestCardDirective} from "./test-card.directive";
++import {Testitem} from "../test-list/testitem";
++
++@Component({
++    selector: 'app-test-card',
++    templateUrl: './test-card.component.html',
++    styleUrls: ['./test-card.component.css']
++})
++export class TestCardComponent implements OnInit {
++    @Input() item: Testitem;
++    @Input() top: number;
++    @Input() listener: CallableFunction;
++    @ViewChild(TestCardDirective) adHost: TestCardDirective;
++
++    constructor() {
++
++    }
++
++    ngOnInit() {
++        //debugger;
++        let viewContainerRef = this.adHost.el;
++        console.log(viewContainerRef);
++        //viewContainerRef.nativeElement.style.position = 'absolute';
++        viewContainerRef.nativeElement.style.left = ''+3+'px';
++        viewContainerRef.nativeElement.style.top = ''+this.top+'px';
++        //viewContainerRef.nativeElement.style.boxShadow = 'black 0px 0px 7px -2px';
++    }
++
++    closeClick() {
++        this.listener();
++    }
++}
+diff --git a/frontend/src/app/test-card/test-card.directive.ts b/frontend/src/app/test-card/test-card.directive.ts
+new file mode 100644
+index 0000000..74394ec
+--- /dev/null
++++ b/frontend/src/app/test-card/test-card.directive.ts
+@@ -0,0 +1,8 @@
++import {Directive, ElementRef, ViewContainerRef} from "@angular/core";
++
++@Directive({
++    selector: '[app-test-card-host]',
++})
++export class TestCardDirective {
++    constructor(public el: ElementRef) { }
++}
+\ No newline at end of file
+diff --git a/frontend/src/app/test-list/test-list.component.css b/frontend/src/app/test-list/test-list.component.css
+new file mode 100644
+index 0000000..e69de29
+diff --git a/frontend/src/app/test-list/test-list.component.html b/frontend/src/app/test-list/test-list.component.html
+new file mode 100644
+index 0000000..e6b7eb9
+--- /dev/null
++++ b/frontend/src/app/test-list/test-list.component.html
+@@ -0,0 +1,18 @@
++<table class="table">
++    <tbody>
++    <tr *ngFor="let item of items"
++        (click)="itemClick($event,item)"
++        [@hoverToggle]="item.isHover ? 'hover' : 'notHover'"
++        (mouseenter)="hoverToggle(item)"
++        (mouseleave)="hoverToggle(item)">
++        <td style="width: 30px;">{{item.id}}</td>
++        <td style="width: 40px;">
++            <div style="background-position: center;background-size: cover; border-radius: 50%; width: 40px; height: 40px;"
++                [style.background-image]="'url(assets/'+item.image+')'"></div>
++        </td>
++        <td>{{item.name}}</td>
++        <td>{{item.cat}}</td>
++        <td>{{item.add}}</td>
++    </tr>
++    </tbody>
++</table>
+\ No newline at end of file
+diff --git a/frontend/src/app/test-list/test-list.component.ts b/frontend/src/app/test-list/test-list.component.ts
+new file mode 100644
+index 0000000..de05159
+--- /dev/null
++++ b/frontend/src/app/test-list/test-list.component.ts
+@@ -0,0 +1,67 @@
++import {Component, Input, OnInit} from '@angular/core';
++import {
++    trigger,
++    state,
++    style,
++    animate,
++    transition,
++    keyframes,
++} from '@angular/animations';
++import {Testitem} from "./testitem";
++
++@Component({
++    selector: 'app-test-list',
++    templateUrl: './test-list.component.html',
++    styleUrls: ['./test-list.component.css'],
++    animations: [
++        trigger('hoverToggle', [
++            // ...
++            state('notHover', style({
++                backgroundColor: 'white'
++            })),
++            state('hover', style({
++                backgroundColor: '#ededed'
++            })),
++            transition('notHover => hover', [
++                animate('0.3s')
++            ]),
++            transition('hover => notHover', [
++                animate('0.3s')
++            ]),
++        ]),
++    ]
++})
++export class TestListComponent implements OnInit {
++    items: Testitem[];
++    @Input()
++    listener: CallableFunction;
++
++    isOpen = true;
++
++    hoverToggle(item:Testitem) {
++        item.isHover = !item.isHover;
++    }
++
++    constructor() {
++        this.items = [];
++        let it = new Testitem();
++        for(let i=0;i<10;i++ ) {
++            it = new Testitem();
++            it.id = i;
++            it.name = 'test'+i;
++            it.cat = 'cat'+i;
++            it.add = 'add'+i;
++            it.image='avatar-neytiri.jpg';
++            it.isHover = false;
++            this.items.push(it);
++        }
++    }
++
++    itemClick($event: any, item:Testitem) {
++        this.listener(item,$event.target.offsetTop);
++    }
++
++    ngOnInit() {
++    }
++
++}
+diff --git a/frontend/src/app/test-list/testitem.ts b/frontend/src/app/test-list/testitem.ts
+new file mode 100644
+index 0000000..f6fe75d
+--- /dev/null
++++ b/frontend/src/app/test-list/testitem.ts
+@@ -0,0 +1,10 @@
++
++
++export class Testitem {
++    id: number;
++    name: string;
++    cat: string;
++    add: string;
++    isHover: boolean;
++    image: string;
++}
+\ No newline at end of file
+diff --git a/frontend/src/app/test-menu/test-menu.component.css b/frontend/src/app/test-menu/test-menu.component.css
+new file mode 100644
+index 0000000..178ef25
+--- /dev/null
++++ b/frontend/src/app/test-menu/test-menu.component.css
+@@ -0,0 +1,21 @@
++.app-test-menu__overlay {
++    position: fixed;
++    top: 0;
++    left: 0;
++    width: 100%;
++    height: 100%;
++    background: black;
++    opacity: 0.3;
++    z-index: 110;
++}
++
++.app-test-menu__block {
++    position: fixed;
++    top: 40px;
++    right: 0;
++    width: 300px;
++    height: calc(100% - 40px);
++    background: white;
++    z-index: 115;
++    padding: 20px;
++}
+\ No newline at end of file
+diff --git a/frontend/src/app/test-menu/test-menu.component.html b/frontend/src/app/test-menu/test-menu.component.html
+new file mode 100644
+index 0000000..e533868
+--- /dev/null
++++ b/frontend/src/app/test-menu/test-menu.component.html
+@@ -0,0 +1,14 @@
++<div [@toggleMenuShow]="isOpen?'opened':'closed'">
++    <button class="m-4" (click)="open()">Показать меню</button>
++    <div class="app-test-menu" *ngIf="isOpen">
++        <div class="app-test-menu__overlay" (click)="close()"></div>
++        <div class="app-test-menu__block">
++            <button class="app-test-menu__close" (click)="close()">Закрыть</button>
++            <ul>
++                <li *ngFor="let item of items">
++                    {{item}}
++                </li>
++            </ul>
++        </div>
++    </div>
++</div>
+\ No newline at end of file
+diff --git a/frontend/src/app/test-menu/test-menu.component.ts b/frontend/src/app/test-menu/test-menu.component.ts
+new file mode 100644
+index 0000000..0c743f6
+--- /dev/null
++++ b/frontend/src/app/test-menu/test-menu.component.ts
+@@ -0,0 +1,40 @@
++import {Component, Input, OnInit} from '@angular/core';
++import {
++    trigger,
++    state,
++    style,
++    animate,
++    transition,
++    keyframes,
++} from '@angular/animations';
++import {toggleMenuShowAnimation} from "../animations/toggle-menu-show.animation";
++
++@Component({
++    selector: 'app-test-menu',
++    templateUrl: './test-menu.component.html',
++    styleUrls: ['./test-menu.component.css'],
++    animations: [toggleMenuShowAnimation]
++})
++export class TestMenuComponent implements OnInit {
++    isOpen:boolean = false;
++    items:string[] = [];
++
++    constructor() {
++        this.items = [];
++        for(let i=0;i<10;i++ ) {
++            this.items.push("Menu item "+i);
++        }
++    }
++
++    open() {
++        this.isOpen = true;
++    }
++
++    close() {
++        this.isOpen = false;
++    }
++
++    ngOnInit() {
++    }
++
++}
+diff --git a/frontend/src/polyfills.ts b/frontend/src/polyfills.ts
+index f589686..4fb8257 100644
+--- a/frontend/src/polyfills.ts
++++ b/frontend/src/polyfills.ts
+@@ -29,7 +29,7 @@ import 'core-js/es7/object';
+  * Only required if AnimationBuilder is used within the application and using IE/Edge or Safari.
+  * Standard animation support in Angular DOES NOT require any polyfills (as of Angular 6.0).
+  */
+-import 'web-animations-js';  // Run `npm install --save web-animations-js`.
++//import 'web-animations-js';  // Run `npm install --save web-animations-js`.
+ 
+ /**
+  * By default, zone.js will patch all possible macroTask and DomEvents
+-- 
+2.19.2.windows.1
+
+__FILES_SPLITTER__From c8512d7688087f53e6b700c305c854d878690de5 Mon Sep 17 00:00:00 2001
+From: "sarvar" <sarkhas@mail.ru>
+Date: Tue, 14 May 2019 17:39:49 +0500
+Subject: [PATCH 2/2] table improve, row add hover animation
+
+---
+ .../srvcorp/animations/row-hover.animation.ts | 28 +++++++++++++++++++
+ frontend/src/srvcorp/row/row.component.ts     |  1 +
+ .../src/srvcorp/table/table.component.html    |  8 ++++++
+ frontend/src/srvcorp/table/table.component.ts | 14 +++++++---
+ 4 files changed, 47 insertions(+), 4 deletions(-)
+ create mode 100644 frontend/src/srvcorp/animations/row-hover.animation.ts
+
+diff --git a/frontend/src/srvcorp/animations/row-hover.animation.ts b/frontend/src/srvcorp/animations/row-hover.animation.ts
+new file mode 100644
+index 0000000..6a571a5
+--- /dev/null
++++ b/frontend/src/srvcorp/animations/row-hover.animation.ts
+@@ -0,0 +1,28 @@
++import {animate, animateChild, group, query, state, style, transition, trigger} from "@angular/animations";
++
++
++export class RowHoverAnimation {
++    protected timings: string = '50ms ease-out';
++    protected backgroundColorDefault:string = 'white';
++    protected backgroundColorHover:string = '#ededed';
++    static build() {
++        let a = new this();
++        return trigger('hoverToggle', [
++            state('notHover', style({
++                backgroundColor: a.backgroundColorDefault
++            })),
++            state('hover', style({
++                backgroundColor: a.backgroundColorHover
++            })),
++            transition('notHover => hover', [
++                animate(a.timings)
++            ]),
++            transition('hover => notHover', [
++                animate(a.timings)
++            ]),
++        ]);
++    }
++}
++
++export const rowHoverAnimation = RowHoverAnimation.build();
++
+diff --git a/frontend/src/srvcorp/row/row.component.ts b/frontend/src/srvcorp/row/row.component.ts
+index 7c0fa3c..18449e9 100644
+--- a/frontend/src/srvcorp/row/row.component.ts
++++ b/frontend/src/srvcorp/row/row.component.ts
+@@ -5,6 +5,7 @@ import {RowDirective} from "./row.directive";
+ import {ColumnComponent} from "../column/column.component";
+ import {ColumnHeaderComponent} from "../column-header/column-header.component";
+ import {ColumnBodyComponent} from "../column-body/column-body.component";
++import {rowHoverAnimation} from "../animations/row-hover.animation";
+ 
+ @Component({
+   selector: 'tr[srvcorp-row]',
+diff --git a/frontend/src/srvcorp/table/table.component.html b/frontend/src/srvcorp/table/table.component.html
+index 9199715..94914f0 100644
+--- a/frontend/src/srvcorp/table/table.component.html
++++ b/frontend/src/srvcorp/table/table.component.html
+@@ -1,6 +1,14 @@
+ <table class="table">
+   <thead srvcorp-table-header-host>
++    <tr srvcorp-row-header [columns]="columns"></tr>
+   </thead>
+   <tbody srvcorp-table-body-host>
++    <tr srvcorp-row
++        *ngFor="let dataItem of data; let i = index"
++        [dataItem]="dataItem"
++        [columns]="columns"
++        [@hoverToggle]="rows[i].hover ? 'hover' : 'notHover'"
++        (mouseenter)="rows[i].hover=true"
++        (mouseleave)="rows[i].hover=false"></tr>
+   </tbody>
+ </table>
+diff --git a/frontend/src/srvcorp/table/table.component.ts b/frontend/src/srvcorp/table/table.component.ts
+index d667801..fdc383e 100644
+--- a/frontend/src/srvcorp/table/table.component.ts
++++ b/frontend/src/srvcorp/table/table.component.ts
+@@ -15,27 +15,33 @@ import {ColumnHeaderComponent} from "../column-header/column-header.component";
+ import {ColumnBodyComponent} from "../column-body/column-body.component";
+ import {RowComponent} from "../row/row.component";
+ import {RowHeaderComponent} from "../row-header/row-header.component";
++import {rowHoverAnimation} from "../animations/row-hover.animation";
+ 
+ @Component({
+   selector: 'srvcorp-table',
+   templateUrl: './table.component.html',
+-  styleUrls: ['./table.component.css']
++  styleUrls: ['./table.component.css'],
++  animations: [rowHoverAnimation]
+ })
+ export class TableComponent implements OnInit, AfterContentInit {
+   @Input() data:any[];
+   @ViewChild(TableHeaderDirective) headerHost: TableHeaderDirective;
+   @ViewChild(TableBodyDirective) bodyHost: TableBodyDirective;
+   @ContentChildren(ColumnComponent) columns: QueryList<ColumnComponent>;
++  rows: any[];
+ 
+   constructor(private componentFactoryResolver: ComponentFactoryResolver) { }
+ 
+   ngOnInit() {
+-
++      this.rows = [];
++      this.data.forEach((dataItem, i, ar) => {
++          this.rows.push({hover: false});//TODO: need move to class
++      });
+   }
+ 
+   ngAfterContentInit(): void {
+     console.log(this.columns);
+-    this.loadComponent();
++    //this.loadComponent();
+   }
+ 
+   private loadComponent() {
+@@ -48,7 +54,7 @@ export class TableComponent implements OnInit, AfterContentInit {
+     let bodyRef = this.bodyHost.elementRef;
+     headerRef.clear();
+     bodyRef.clear();
+-    let rowHeader = bodyRef.createComponent(rowHeaderFactory);
++    let rowHeader = headerRef.createComponent(rowHeaderFactory);
+     rowHeader.instance.columns = this.columns;
+     this.data.forEach((dataItem, i, ar) => {
+       let row = bodyRef.createComponent(rowFactory);
+-- 
+2.19.2.windows.1
+
+__FILES_SPLITTER__
