@@ -1,1015 +1,878 @@
-From 438f62d9c08a8fabd2a80338ab59597be2dc948e Mon Sep 17 00:00:00 2001
+From 881df2697add30a6272a9bd1df97f16c7a37dd29 Mon Sep 17 00:00:00 2001
 From: "sarvar" <sarkhas@mail.ru>
-Date: Tue, 14 May 2019 16:52:38 +0500
-Subject: [PATCH 1/2] animations
+Date: Wed, 15 May 2019 11:47:52 +0500
+Subject: [PATCH 1/3] table dinamic generate replaced with template
 
 ---
- frontend/angular.json                         |   8 +-
- ...nimtest-toggle-list-item-show.animation.ts |  92 ++++++++++++++
- .../toggle-list-item-show.animation.ts        | 113 ++++++++++++++++++
- .../animations/toggle-menu-show.animation.ts  | 103 ++++++++++++++++
- .../src/app/animtest/animtest.component.css   |   0
- .../src/app/animtest/animtest.component.html  |  11 ++
- .../src/app/animtest/animtest.component.ts    |  57 +++++++++
- frontend/src/app/app-routing.module.ts        |   4 +-
- frontend/src/app/app.module.ts                |  14 ++-
- .../app/menu-table/menu-table.component.ts    |   8 ++
- frontend/src/app/menu/menu.component.ts       |   8 ++
- .../src/app/test-card/test-card.component.css |   0
- .../app/test-card/test-card.component.html    |  12 ++
- .../src/app/test-card/test-card.component.ts  |  33 +++++
- .../src/app/test-card/test-card.directive.ts  |   8 ++
- .../src/app/test-list/test-list.component.css |   0
- .../app/test-list/test-list.component.html    |  18 +++
- .../src/app/test-list/test-list.component.ts  |  67 +++++++++++
- frontend/src/app/test-list/testitem.ts        |  10 ++
- .../src/app/test-menu/test-menu.component.css |  21 ++++
- .../app/test-menu/test-menu.component.html    |  14 +++
- .../src/app/test-menu/test-menu.component.ts  |  40 +++++++
- frontend/src/polyfills.ts                     |   2 +-
- 23 files changed, 632 insertions(+), 11 deletions(-)
- create mode 100644 frontend/src/app/animations/animtest-toggle-list-item-show.animation.ts
- create mode 100644 frontend/src/app/animations/toggle-list-item-show.animation.ts
- create mode 100644 frontend/src/app/animations/toggle-menu-show.animation.ts
- create mode 100644 frontend/src/app/animtest/animtest.component.css
- create mode 100644 frontend/src/app/animtest/animtest.component.html
- create mode 100644 frontend/src/app/animtest/animtest.component.ts
- create mode 100644 frontend/src/app/test-card/test-card.component.css
- create mode 100644 frontend/src/app/test-card/test-card.component.html
- create mode 100644 frontend/src/app/test-card/test-card.component.ts
- create mode 100644 frontend/src/app/test-card/test-card.directive.ts
- create mode 100644 frontend/src/app/test-list/test-list.component.css
- create mode 100644 frontend/src/app/test-list/test-list.component.html
- create mode 100644 frontend/src/app/test-list/test-list.component.ts
- create mode 100644 frontend/src/app/test-list/testitem.ts
- create mode 100644 frontend/src/app/test-menu/test-menu.component.css
- create mode 100644 frontend/src/app/test-menu/test-menu.component.html
- create mode 100644 frontend/src/app/test-menu/test-menu.component.ts
+ .../animations/row-backlight.animation.ts     |  34 +++++
+ .../srvcorp/animations/row-hover.animation.ts |  28 -----
+ .../column-body/column-body.component.ts      |   2 +-
+ .../column-header/column-header.component.ts  |   2 +-
+ frontend/src/srvcorp/entities/mouse-state.ts  |  11 ++
+ frontend/src/srvcorp/entities/row-state.ts    |   7 ++
+ .../row-header/row-header.component.html      |   2 +-
+ .../row-header/row-header.component.ts        |   7 +-
+ .../row-header/row-header.directive.ts        |   2 +-
+ frontend/src/srvcorp/row/row.component.html   |   2 +-
+ frontend/src/srvcorp/row/row.component.ts     |   9 +-
+ .../src/srvcorp/table/table-body.directive.ts |   2 +-
+ .../srvcorp/table/table-header.directive.ts   |   2 +-
+ .../src/srvcorp/table/table.component.html    |  26 ++--
+ frontend/src/srvcorp/table/table.component.ts | 118 ++++++++++++++++--
+ 16 files changed, 195 insertions(+), 59 deletions(-)
+ create mode 100644 frontend/src/srvcorp/animations/row-backlight.animation.ts
+ delete mode 100644 frontend/src/srvcorp/animations/row-hover.animation.ts
+ create mode 100644 frontend/src/srvcorp/entities/mouse-state.ts
+ create mode 100644 frontend/src/srvcorp/entities/row-state.ts
 
-diff --git a/frontend/angular.json b/frontend/angular.json
-index e83979c..b781038 100644
---- a/frontend/angular.json
-+++ b/frontend/angular.json
-@@ -30,9 +30,7 @@
-               "src/styles.css",
-               "node_modules/bootstrap/dist/css/bootstrap.min.css"
-             ],
--            "scripts": [
--              "./node_modules/hammerjs/hammer.min.js"
--            ],
-+            "scripts": [],
-             "es5BrowserSupport": true
-           },
-           "configurations": {
-@@ -89,9 +87,7 @@
-             "styles": [
-               "src/styles.sass"
-             ],
--            "scripts": [
--              "./node_modules/hammerjs/hammer.min.js"
--            ],
-+            "scripts": [],
-             "assets": [
-               "src/favicon.ico",
-               "src/assets"
-diff --git a/frontend/src/app/animations/animtest-toggle-list-item-show.animation.ts b/frontend/src/app/animations/animtest-toggle-list-item-show.animation.ts
+diff --git a/frontend/src/srvcorp/animations/row-backlight.animation.ts b/frontend/src/srvcorp/animations/row-backlight.animation.ts
 new file mode 100644
-index 0000000..d761286
+index 0000000..6f8bea9
 --- /dev/null
-+++ b/frontend/src/app/animations/animtest-toggle-list-item-show.animation.ts
-@@ -0,0 +1,92 @@
-+import {animate, animateChild, group, query, style, transition, trigger} from "@angular/animations";
-+import {ToggleListItemShowAnimation} from "./toggle-list-item-show.animation";
-+
-+
-+export class AnimtestToggleListItemShowAnimation extends ToggleListItemShowAnimation {
-+    protected itemChildrenListStates() {
-+        return [
-+            query('.test-card-animate-hidden', [style(this.itemChilderHiddenState())]),
-+            query('.test-card-animate-logo', [style(this.itemLogoListState())]),
-+            query('.test-card-animate-name', [style(this.itemNameListState())]),
-+        ];
-+    }
-+
-+    protected itemChildrenCartStates() {
-+        return [
-+            query('.test-card-animate-hidden', [style(this.itemChilderHiddenState())]),
-+            query('.test-card-animate-logo', [style(this.itemLogoCartState())]),
-+            query('.test-card-animate-name', [style(this.itemNameCartState())]),
-+        ];
-+    }
-+
-+    protected itemChildrenToCartAnimations() {
-+        return [
-+            query('.test-card-animate-logo', [
-+                animate(this.timings, style(this.itemLogoCartState())),
-+            ]),
-+            query('.test-card-animate-name', [
-+                animate(this.timings, style(this.itemNameCartState()))
-+            ]),
-+        ];
-+    }
-+
-+    protected itemChildrenToListAnimations() {
-+        return [
-+            query('.test-card-animate-logo', [
-+                animate(this.timings, style(this.itemLogoListState())),
-+            ]),
-+            query('.test-card-animate-name', [
-+                animate(this.timings, style(this.itemNameListState())),
-+            ]),
-+        ];
-+    }
-+
-+    protected itemChilderHiddenState() {
-+        return {opacity: 0};
-+    }
-+
-+    protected itemLogoListState() {
-+        return {
-+            width: '40px',
-+            height: '40px',
-+            'vertical-align': 'top',
-+            margin: '12px 12px 12px 45px',
-+        };
-+    }
-+
-+    protected itemNameListState() {
-+        return {
-+            position: 'absolute',
-+            top: '12px',
-+            left: '110px',
-+            'font-size': '1rem',
-+            'font-weight': '400',
-+            'line-height': '1.5',
-+            color: '#212529',
-+        };
-+    }
-+
-+    protected itemLogoCartState() {
-+        return {
-+            width: '150px',
-+            height: '150px',
-+            margin: '0',
-+        };
-+    }
-+
-+    protected itemNameCartState() {
-+        return {
-+            top: '150px',
-+            left: '0px',
-+            margin: '0 0 .5rem 0',
-+            'vertical-align': 'top',
-+            'font-size': '2.5rem',
-+            'font-weight': '500',
-+            'line-height': '1.2',
-+            color: '#212529',
-+        };
-+    }
-+}
-+
-+export const animtestToggleListItemShowAnimation = AnimtestToggleListItemShowAnimation.build();
-+
-diff --git a/frontend/src/app/animations/toggle-list-item-show.animation.ts b/frontend/src/app/animations/toggle-list-item-show.animation.ts
-new file mode 100644
-index 0000000..86fd517
---- /dev/null
-+++ b/frontend/src/app/animations/toggle-list-item-show.animation.ts
-@@ -0,0 +1,113 @@
-+import {animate, animateChild, group, query, style, transition, trigger} from "@angular/animations";
-+
-+
-+export class ToggleListItemShowAnimation {
-+    protected timings: string = '150ms ease-out';
-+    static build() {
-+        let a = new this();
-+        return trigger('toggleListItemShow', [
-+            a.itemShow(),
-+            a.itemHide(),
-+        ]);
-+    }
-+
-+    protected itemShow() {
-+        return transition('list => card', [
-+            style({position: 'relative'}),
-+            query(':enter, :leave', [style(this.defaultInitState())]),
-+            query(':leave', animateChild()),
-+            query(':enter', [
-+                style(this.itemListState()),
-+            ]),
-+            query(':enter', this.itemChildrenListStates()),
-+            query(':enter', [
-+                animate(this.timings, style(this.itemElevatedState())),
-+            ]),
-+            group([
-+                query(':enter', [
-+                    animate(this.timings, style(this.itemCartState())),
-+                ]),
-+                query(':enter', [group(this.itemChildrenToCartAnimations())])
-+            ]),
-+            query(':enter', animateChild()),
-+        ]);
-+    }
-+
-+    protected itemHide() {
-+        return transition('card => list', [
-+            style({position: 'relative'}),
-+            query(':enter, :leave', [style(this.defaultInitState())]),
-+            query(':enter', animateChild()),
-+            query(':leave', [style(this.itemCartState()),]),
-+            query(':leave', this.itemChildrenCartStates()),
-+            group([
-+                query(':leave', [group(this.itemChildrenToListAnimations())]),
-+                query(':leave', [
-+                    animate(this.timings, style(this.itemElevatedState())),
-+                ]),
-+            ]),
-+            query(':leave', [
-+                animate(this.timings, style(this.itemListState())),
-+            ]),
-+            query(':enter', animateChild()),
-+        ]);
-+    }
-+
-+    protected defaultInitState() {
-+        return {
-+            position: 'absolute',
-+            opacity: 1,
-+            width: '100%',
-+            background: 'white'
-+        };
-+    }
-+
-+    protected itemListState() {
-+        return {
-+            opacity: 0,
-+            "box-shadow": 'black 0px 0px 0px 0px',
-+            width: '100%',
-+            height: '63px',
-+            top: '{{itemTop}}px',
-+            overflow: 'hidden',
-+        };
-+    }
-+
-+    protected itemElevatedState() {
-+        return {
-+            opacity: 1,
-+            "box-shadow": 'black 0px 0px 16px 0px',
-+            top: '{{itemTop}}px',
-+            width: '100%',
-+            height: '63px',
-+        };
-+    }
-+
-+    protected itemCartState() {
-+        return Object.assign(this.itemElevatedState(),{
-+            top: '{{pageTop}}px',
-+            height: '{{pageHeight}}px',
-+            width: '100%',
-+            overflow: 'hidden',
-+        });
-+    }
-+
-+    protected itemChildrenListStates() {
-+        return [];
-+    }
-+
-+    protected itemChildrenCartStates() {
-+        return [];
-+    }
-+
-+    protected itemChildrenToCartAnimations() {
-+        return [];
-+    }
-+
-+    protected itemChildrenToListAnimations() {
-+        return [];
-+    }
-+}
-+
-+export const toggleListItemShowAnimation = ToggleListItemShowAnimation.build();
-+
-diff --git a/frontend/src/app/animations/toggle-menu-show.animation.ts b/frontend/src/app/animations/toggle-menu-show.animation.ts
-new file mode 100644
-index 0000000..d3ed3cb
---- /dev/null
-+++ b/frontend/src/app/animations/toggle-menu-show.animation.ts
-@@ -0,0 +1,103 @@
-+import {animate, animateChild, group, query, style, transition, trigger} from "@angular/animations";
-+
-+
-+export class ToggleMenuShowAnimation {
-+    protected timings: string = '150ms ease-out';
-+    static build() {
-+        let a = new this();
-+        return trigger('toggleMenuShow', [
-+            a.itemShow(),
-+            a.itemHide(),
-+        ]);
-+    }
-+
-+    protected itemShow() {
-+        return transition('closed => opened', [
-+            query(':enter', [style(this.defaultInitState())]),
-+            query(':enter', [
-+                style(this.itemClosedState()),
-+            ]),
-+            query(':enter', this.itemChildrenClosedStates()),
-+            group([
-+                query(':enter', [
-+                    animate(this.timings, style(this.itemOpenedState())),
-+                ]),
-+                query(':enter', [group(this.itemChildrenToOpenAnimations())])
-+            ]),
-+            query(':enter', animateChild()),
-+        ]);
-+    }
-+
-+    protected itemHide() {
-+        return transition('opened => closed', [
-+            query(':leave', [style(this.defaultInitState())]),
-+            query(':leave', [style(this.itemOpenedState()),]),
-+            query(':leave', this.itemChildrenOpenedStates()),
-+            group([
-+                query(':leave', [group(this.itemChildrenToCloseAnimations())]),
-+                query(':leave', [
-+                    animate(this.timings, style(this.itemClosedState())),
-+                ]),
-+            ]),
-+        ]);
-+    }
-+
-+    protected defaultInitState() {
-+        return {};
-+    }
-+
-+    protected itemClosedState() {
-+        return {};
-+    }
-+
-+    protected itemOpenedState() {
-+        return {};
-+    }
-+
-+    protected itemChildrenClosedStates() {
-+        return [
-+            query('.app-test-menu__overlay', [style(this.itemOverlayClosedState())]),
-+            query('.app-test-menu__block', [style(this.itemMenuClosedState())]),
-+        ];
-+    }
-+
-+    protected itemChildrenOpenedStates() {
-+        return [
-+            query('.app-test-menu__overlay', [style(this.itemOverlayOpenedState())]),
-+            query('.app-test-menu__block', [style(this.itemMenuOpenedState())]),
-+        ];
-+    }
-+
-+    protected itemChildrenToOpenAnimations() {
-+        return [
-+            query('.app-test-menu__overlay', [animate(this.timings,style(this.itemOverlayOpenedState()))]),
-+            query('.app-test-menu__block', [animate(this.timings,style(this.itemMenuOpenedState()))]),
-+        ];
-+    }
-+
-+    protected itemChildrenToCloseAnimations() {
-+        return [
-+            query('.app-test-menu__overlay', [animate(this.timings,style(this.itemOverlayClosedState()))]),
-+            query('.app-test-menu__block', [animate(this.timings,style(this.itemMenuClosedState()))]),
-+        ];
-+    }
-+
-+    protected itemOverlayClosedState() {
-+        return {opacity: 0};
-+    }
-+
-+    protected itemOverlayOpenedState() {
-+        return {opacity: 0.3};
-+    }
-+
-+    protected itemMenuClosedState() {
-+        return {right: '-300px'};
-+    }
-+
-+    protected itemMenuOpenedState() {
-+        return {right: '0'};
-+    }
-+}
-+
-+export const toggleMenuShowAnimation = ToggleMenuShowAnimation.build();
-+
-diff --git a/frontend/src/app/animtest/animtest.component.css b/frontend/src/app/animtest/animtest.component.css
-new file mode 100644
-index 0000000..e69de29
-diff --git a/frontend/src/app/animtest/animtest.component.html b/frontend/src/app/animtest/animtest.component.html
-new file mode 100644
-index 0000000..a3ce3c6
---- /dev/null
-+++ b/frontend/src/app/animtest/animtest.component.html
-@@ -0,0 +1,11 @@
-+<div>
-+    <app-test-menu></app-test-menu>
-+    <div [@toggleListItemShow]="{value: viewTypeSwitch ? 'card' : 'list', params: {itemTop: itemTop, pageTop: pageYOffset, pageHeight: pageHeight}}"
-+         style="height: 100%"
-+         (@toggleListItemShow.start)="animStart($event)"
-+         (@toggleListItemShow.done)="animDone($event)">
-+        <app-test-list *ngIf="!viewTypeSwitch" [listener]="listItemClick"></app-test-list>
-+        <app-test-card *ngIf="viewTypeSwitch" [item]="item" [top]="itemTop" [listener]="cardCloseClick"
-+                       [style.top]="itemTop+'px'"></app-test-card>
-+    </div>
-+</div>
-\ No newline at end of file
-diff --git a/frontend/src/app/animtest/animtest.component.ts b/frontend/src/app/animtest/animtest.component.ts
-new file mode 100644
-index 0000000..96b56a8
---- /dev/null
-+++ b/frontend/src/app/animtest/animtest.component.ts
-@@ -0,0 +1,57 @@
-+import {Component, OnInit} from '@angular/core';
++++ b/frontend/src/srvcorp/animations/row-backlight.animation.ts
+@@ -0,0 +1,34 @@
 +import {animate, animateChild, group, query, state, style, transition, trigger} from "@angular/animations";
-+import {animtestToggleListItemShowAnimation} from "../animations/animtest-toggle-list-item-show.animation";
-+
-+@Component({
-+    selector: 'app-pages-animtest',
-+    templateUrl: './animtest.component.html',
-+    styleUrls: ['./animtest.component.css'],
-+    animations: [
-+        animtestToggleListItemShowAnimation,
-+    ]
-+})
-+export class AnimtestComponent implements OnInit {
-+    title: string = "animtest";
-+    viewTypeSwitch: boolean = false;
-+    item: number[];
-+    itemTop: number;
-+    pageYOffset: number = 0;
-+    pageHeight: number = 0;
-+
-+    constructor() {
-+        console.log('constructor animtest');
-+        this.listItemClick = this.listItemClick.bind(this);
-+        this.cardCloseClick = this.cardCloseClick.bind(this);
-+    }
-+
-+    ngOnInit() {
-+    }
-+
-+    listItemClick(item, top) {
-+        this.item = item;
-+        this.itemTop = top;
-+        this.pageHeight = window.innerHeight;
-+        this.pageYOffset = document.getElementsByTagName('html')[0].scrollTop;
-+        this.viewTypeSwitch = true;
-+    }
-+
-+    cardCloseClick() {
-+        this.viewTypeSwitch = false;
-+    }
-+
-+    animStart(event) {
-+        if (event.fromState=='list') {
-+            this.pageYOffset = document.getElementsByTagName('html')[0].scrollTop;
-+        } else if (event.fromState=='card') {
-+            document.getElementsByTagName('html')[0].scrollTop = this.pageYOffset;
-+        }
-+    }
-+
-+    animDone(event) {
-+        if (event.fromState=='list') {
-+            document.getElementsByTagName('html')[0].scrollTop = 0;
-+        } else if (event.fromState=='card') {
-+
-+        }
-+    }
-+}
-diff --git a/frontend/src/app/app-routing.module.ts b/frontend/src/app/app-routing.module.ts
-index 8040557..58a9a42 100644
---- a/frontend/src/app/app-routing.module.ts
-+++ b/frontend/src/app/app-routing.module.ts
-@@ -2,11 +2,13 @@ import { NgModule }             from '@angular/core';
- import { RouterModule, Routes } from '@angular/router';
- import {DashboardComponent} from "./dashboard/dashboard.component";
- import {MenuAdminComponent} from "./menu-table/menu-table.component";
-+import {AnimtestComponent} from "./animtest/animtest.component";
- 
- const routes: Routes = [
-     { path: '', pathMatch: 'full', component: DashboardComponent },
-     { path: 'dashboard', component: DashboardComponent },
--    { path: 'menu', component: MenuAdminComponent }
-+    { path: 'menu', component: MenuAdminComponent },
-+    { path: 'animtest', component: AnimtestComponent }
- ];
- 
- @NgModule({
-diff --git a/frontend/src/app/app.module.ts b/frontend/src/app/app.module.ts
-index c6cdb6c..671b454 100644
---- a/frontend/src/app/app.module.ts
-+++ b/frontend/src/app/app.module.ts
-@@ -17,8 +17,12 @@ import { CoreTextViewComponent } from "./core-field/views/core-text-view.compone
- import { CoreFieldViewerDirective } from "./core-field/core-field-viewer.directive";
- import { MockService } from "./services/mock.service";
- import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
--import { IgxGridModule } from 'igniteui-angular';
- import {SrvcorpModule} from "../srvcorp/srvcorp.module";
-+import {TestCardDirective} from "./test-card/test-card.directive";
-+import {TestListComponent} from "./test-list/test-list.component";
-+import {TestCardComponent} from "./test-card/test-card.component";
-+import {AnimtestComponent} from "./animtest/animtest.component";
-+import {TestMenuComponent} from "./test-menu/test-menu.component";
- 
- @NgModule({
-   declarations: [
-@@ -31,7 +35,12 @@ import {SrvcorpModule} from "../srvcorp/srvcorp.module";
-     CoreInputViewComponent,
-     CoreFieldViewerComponent,
-     CoreFieldViewerDirective,
--    CoreTextViewComponent
-+    CoreTextViewComponent,
-+    TestCardDirective,
-+    TestCardComponent,
-+    TestListComponent,
-+    TestMenuComponent,
-+    AnimtestComponent
-   ],
-   entryComponents: [CoreInputViewComponent, CoreTextViewComponent],
-   imports: [
-@@ -40,7 +49,6 @@ import {SrvcorpModule} from "../srvcorp/srvcorp.module";
-     HttpClientModule,
-     FormsModule,
-     BrowserAnimationsModule,
--    IgxGridModule,
-     SrvcorpModule
-   ],
-   providers: [
-diff --git a/frontend/src/app/menu-table/menu-table.component.ts b/frontend/src/app/menu-table/menu-table.component.ts
-index 0f5519e..b63749e 100644
---- a/frontend/src/app/menu-table/menu-table.component.ts
-+++ b/frontend/src/app/menu-table/menu-table.component.ts
-@@ -63,5 +63,13 @@ export class MenuAdminComponent implements OnInit {
-         item.icon='';
-         item.isActive=false;
-         this.menu.push(item);
-+
-+        item = new Menu();
-+        item.id=1;
-+        item.name='Animtest';
-+        item.url='/animtest';
-+        item.icon='';
-+        item.isActive=false;
-+        this.menu.push(item);
-     }
- }
-diff --git a/frontend/src/app/menu/menu.component.ts b/frontend/src/app/menu/menu.component.ts
-index 9fffb49..abe4a32 100644
---- a/frontend/src/app/menu/menu.component.ts
-+++ b/frontend/src/app/menu/menu.component.ts
-@@ -42,5 +42,13 @@ export class MenuComponent implements OnInit {
-         item.icon='';
-         item.isActive=false;
-         this.menu.push(item);
-+
-+        item = new Menu();
-+        item.id=1;
-+        item.name='Animtest';
-+        item.url='/animtest';
-+        item.icon='';
-+        item.isActive=false;
-+        this.menu.push(item);
-     }
- }
-diff --git a/frontend/src/app/test-card/test-card.component.css b/frontend/src/app/test-card/test-card.component.css
-new file mode 100644
-index 0000000..e69de29
-diff --git a/frontend/src/app/test-card/test-card.component.html b/frontend/src/app/test-card/test-card.component.html
-new file mode 100644
-index 0000000..6ada9e1
---- /dev/null
-+++ b/frontend/src/app/test-card/test-card.component.html
-@@ -0,0 +1,12 @@
-+<div app-test-card-host>
-+    <div class="test-card-animate-logo"
-+         style="background-position: center;background-size: cover; border-radius: 50%; width: 150px; height: 150px;"
-+         [style.background-image]="'url(assets/'+item.image+')'"></div>
-+    <h1 class="test-card-animate-name">{{item.name}}</h1>
-+    <div class="test-card-animate-hidden">
-+        <button (click)="closeClick()">Close</button>
-+        <p>
-+            {{item.cat}}
-+        </p>
-+    </div>
-+</div>
-\ No newline at end of file
-diff --git a/frontend/src/app/test-card/test-card.component.ts b/frontend/src/app/test-card/test-card.component.ts
-new file mode 100644
-index 0000000..a34d6d4
---- /dev/null
-+++ b/frontend/src/app/test-card/test-card.component.ts
-@@ -0,0 +1,33 @@
-+import {Component, Input, OnInit, ViewChild} from '@angular/core';
-+import {TestCardDirective} from "./test-card.directive";
-+import {Testitem} from "../test-list/testitem";
-+
-+@Component({
-+    selector: 'app-test-card',
-+    templateUrl: './test-card.component.html',
-+    styleUrls: ['./test-card.component.css']
-+})
-+export class TestCardComponent implements OnInit {
-+    @Input() item: Testitem;
-+    @Input() top: number;
-+    @Input() listener: CallableFunction;
-+    @ViewChild(TestCardDirective) adHost: TestCardDirective;
-+
-+    constructor() {
-+
-+    }
-+
-+    ngOnInit() {
-+        //debugger;
-+        let viewContainerRef = this.adHost.el;
-+        console.log(viewContainerRef);
-+        //viewContainerRef.nativeElement.style.position = 'absolute';
-+        viewContainerRef.nativeElement.style.left = ''+3+'px';
-+        viewContainerRef.nativeElement.style.top = ''+this.top+'px';
-+        //viewContainerRef.nativeElement.style.boxShadow = 'black 0px 0px 7px -2px';
-+    }
-+
-+    closeClick() {
-+        this.listener();
-+    }
-+}
-diff --git a/frontend/src/app/test-card/test-card.directive.ts b/frontend/src/app/test-card/test-card.directive.ts
-new file mode 100644
-index 0000000..74394ec
---- /dev/null
-+++ b/frontend/src/app/test-card/test-card.directive.ts
-@@ -0,0 +1,8 @@
-+import {Directive, ElementRef, ViewContainerRef} from "@angular/core";
-+
-+@Directive({
-+    selector: '[app-test-card-host]',
-+})
-+export class TestCardDirective {
-+    constructor(public el: ElementRef) { }
-+}
-\ No newline at end of file
-diff --git a/frontend/src/app/test-list/test-list.component.css b/frontend/src/app/test-list/test-list.component.css
-new file mode 100644
-index 0000000..e69de29
-diff --git a/frontend/src/app/test-list/test-list.component.html b/frontend/src/app/test-list/test-list.component.html
-new file mode 100644
-index 0000000..e6b7eb9
---- /dev/null
-+++ b/frontend/src/app/test-list/test-list.component.html
-@@ -0,0 +1,18 @@
-+<table class="table">
-+    <tbody>
-+    <tr *ngFor="let item of items"
-+        (click)="itemClick($event,item)"
-+        [@hoverToggle]="item.isHover ? 'hover' : 'notHover'"
-+        (mouseenter)="hoverToggle(item)"
-+        (mouseleave)="hoverToggle(item)">
-+        <td style="width: 30px;">{{item.id}}</td>
-+        <td style="width: 40px;">
-+            <div style="background-position: center;background-size: cover; border-radius: 50%; width: 40px; height: 40px;"
-+                [style.background-image]="'url(assets/'+item.image+')'"></div>
-+        </td>
-+        <td>{{item.name}}</td>
-+        <td>{{item.cat}}</td>
-+        <td>{{item.add}}</td>
-+    </tr>
-+    </tbody>
-+</table>
-\ No newline at end of file
-diff --git a/frontend/src/app/test-list/test-list.component.ts b/frontend/src/app/test-list/test-list.component.ts
-new file mode 100644
-index 0000000..de05159
---- /dev/null
-+++ b/frontend/src/app/test-list/test-list.component.ts
-@@ -0,0 +1,67 @@
-+import {Component, Input, OnInit} from '@angular/core';
-+import {
-+    trigger,
-+    state,
-+    style,
-+    animate,
-+    transition,
-+    keyframes,
-+} from '@angular/animations';
-+import {Testitem} from "./testitem";
-+
-+@Component({
-+    selector: 'app-test-list',
-+    templateUrl: './test-list.component.html',
-+    styleUrls: ['./test-list.component.css'],
-+    animations: [
-+        trigger('hoverToggle', [
-+            // ...
-+            state('notHover', style({
-+                backgroundColor: 'white'
-+            })),
-+            state('hover', style({
-+                backgroundColor: '#ededed'
-+            })),
-+            transition('notHover => hover', [
-+                animate('0.3s')
-+            ]),
-+            transition('hover => notHover', [
-+                animate('0.3s')
-+            ]),
-+        ]),
-+    ]
-+})
-+export class TestListComponent implements OnInit {
-+    items: Testitem[];
-+    @Input()
-+    listener: CallableFunction;
-+
-+    isOpen = true;
-+
-+    hoverToggle(item:Testitem) {
-+        item.isHover = !item.isHover;
-+    }
-+
-+    constructor() {
-+        this.items = [];
-+        let it = new Testitem();
-+        for(let i=0;i<10;i++ ) {
-+            it = new Testitem();
-+            it.id = i;
-+            it.name = 'test'+i;
-+            it.cat = 'cat'+i;
-+            it.add = 'add'+i;
-+            it.image='avatar-neytiri.jpg';
-+            it.isHover = false;
-+            this.items.push(it);
-+        }
-+    }
-+
-+    itemClick($event: any, item:Testitem) {
-+        this.listener(item,$event.target.offsetTop);
-+    }
-+
-+    ngOnInit() {
-+    }
-+
-+}
-diff --git a/frontend/src/app/test-list/testitem.ts b/frontend/src/app/test-list/testitem.ts
-new file mode 100644
-index 0000000..f6fe75d
---- /dev/null
-+++ b/frontend/src/app/test-list/testitem.ts
-@@ -0,0 +1,10 @@
 +
 +
-+export class Testitem {
-+    id: number;
-+    name: string;
-+    cat: string;
-+    add: string;
-+    isHover: boolean;
-+    image: string;
-+}
-\ No newline at end of file
-diff --git a/frontend/src/app/test-menu/test-menu.component.css b/frontend/src/app/test-menu/test-menu.component.css
-new file mode 100644
-index 0000000..178ef25
---- /dev/null
-+++ b/frontend/src/app/test-menu/test-menu.component.css
-@@ -0,0 +1,21 @@
-+.app-test-menu__overlay {
-+    position: fixed;
-+    top: 0;
-+    left: 0;
-+    width: 100%;
-+    height: 100%;
-+    background: black;
-+    opacity: 0.3;
-+    z-index: 110;
++export class RowBacklightAnimation {
++  protected timings: string = '50ms ease-out';
++  protected backgroundColorDefault: string = 'white';
++  protected backgroundColorHover: string = '#ededed';
++  protected backgroundColorSelected: string = '#e5e5e5';
++  protected backgroundColorChecked: string = '#fffd83';
++
++  static build() {
++    let a = new this();
++    return trigger('backlightToggle', [
++      state('clear', style({
++        backgroundColor: a.backgroundColorDefault
++      })),
++      state('hover', style({
++        backgroundColor: a.backgroundColorHover
++      })),
++      state('selected', style({
++        backgroundColor: a.backgroundColorSelected
++      })),
++      state('checked', style({
++        backgroundColor: a.backgroundColorChecked
++      })),
++      transition('* <=> *', [
++        animate(a.timings)
++      ]),
++    ]);
++  }
 +}
 +
-+.app-test-menu__block {
-+    position: fixed;
-+    top: 40px;
-+    right: 0;
-+    width: 300px;
-+    height: calc(100% - 40px);
-+    background: white;
-+    z-index: 115;
-+    padding: 20px;
-+}
-\ No newline at end of file
-diff --git a/frontend/src/app/test-menu/test-menu.component.html b/frontend/src/app/test-menu/test-menu.component.html
-new file mode 100644
-index 0000000..e533868
---- /dev/null
-+++ b/frontend/src/app/test-menu/test-menu.component.html
-@@ -0,0 +1,14 @@
-+<div [@toggleMenuShow]="isOpen?'opened':'closed'">
-+    <button class="m-4" (click)="open()">Показать меню</button>
-+    <div class="app-test-menu" *ngIf="isOpen">
-+        <div class="app-test-menu__overlay" (click)="close()"></div>
-+        <div class="app-test-menu__block">
-+            <button class="app-test-menu__close" (click)="close()">Закрыть</button>
-+            <ul>
-+                <li *ngFor="let item of items">
-+                    {{item}}
-+                </li>
-+            </ul>
-+        </div>
-+    </div>
-+</div>
-\ No newline at end of file
-diff --git a/frontend/src/app/test-menu/test-menu.component.ts b/frontend/src/app/test-menu/test-menu.component.ts
-new file mode 100644
-index 0000000..0c743f6
---- /dev/null
-+++ b/frontend/src/app/test-menu/test-menu.component.ts
-@@ -0,0 +1,40 @@
-+import {Component, Input, OnInit} from '@angular/core';
-+import {
-+    trigger,
-+    state,
-+    style,
-+    animate,
-+    transition,
-+    keyframes,
-+} from '@angular/animations';
-+import {toggleMenuShowAnimation} from "../animations/toggle-menu-show.animation";
++export const rowBacklightAnimation = RowBacklightAnimation.build();
 +
-+@Component({
-+    selector: 'app-test-menu',
-+    templateUrl: './test-menu.component.html',
-+    styleUrls: ['./test-menu.component.css'],
-+    animations: [toggleMenuShowAnimation]
-+})
-+export class TestMenuComponent implements OnInit {
-+    isOpen:boolean = false;
-+    items:string[] = [];
-+
-+    constructor() {
-+        this.items = [];
-+        for(let i=0;i<10;i++ ) {
-+            this.items.push("Menu item "+i);
-+        }
-+    }
-+
-+    open() {
-+        this.isOpen = true;
-+    }
-+
-+    close() {
-+        this.isOpen = false;
-+    }
-+
-+    ngOnInit() {
-+    }
-+
-+}
-diff --git a/frontend/src/polyfills.ts b/frontend/src/polyfills.ts
-index f589686..4fb8257 100644
---- a/frontend/src/polyfills.ts
-+++ b/frontend/src/polyfills.ts
-@@ -29,7 +29,7 @@ import 'core-js/es7/object';
-  * Only required if AnimationBuilder is used within the application and using IE/Edge or Safari.
-  * Standard animation support in Angular DOES NOT require any polyfills (as of Angular 6.0).
-  */
--import 'web-animations-js';  // Run `npm install --save web-animations-js`.
-+//import 'web-animations-js';  // Run `npm install --save web-animations-js`.
- 
- /**
-  * By default, zone.js will patch all possible macroTask and DomEvents
--- 
-2.19.2.windows.1
-
-__FILES_SPLITTER__From c8512d7688087f53e6b700c305c854d878690de5 Mon Sep 17 00:00:00 2001
-From: "sarvar" <sarkhas@mail.ru>
-Date: Tue, 14 May 2019 17:39:49 +0500
-Subject: [PATCH 2/2] table improve, row add hover animation
-
----
- .../srvcorp/animations/row-hover.animation.ts | 28 +++++++++++++++++++
- frontend/src/srvcorp/row/row.component.ts     |  1 +
- .../src/srvcorp/table/table.component.html    |  8 ++++++
- frontend/src/srvcorp/table/table.component.ts | 14 +++++++---
- 4 files changed, 47 insertions(+), 4 deletions(-)
- create mode 100644 frontend/src/srvcorp/animations/row-hover.animation.ts
-
 diff --git a/frontend/src/srvcorp/animations/row-hover.animation.ts b/frontend/src/srvcorp/animations/row-hover.animation.ts
+deleted file mode 100644
+index 6a571a5..0000000
+--- a/frontend/src/srvcorp/animations/row-hover.animation.ts
++++ /dev/null
+@@ -1,28 +0,0 @@
+-import {animate, animateChild, group, query, state, style, transition, trigger} from "@angular/animations";
+-
+-
+-export class RowHoverAnimation {
+-    protected timings: string = '50ms ease-out';
+-    protected backgroundColorDefault:string = 'white';
+-    protected backgroundColorHover:string = '#ededed';
+-    static build() {
+-        let a = new this();
+-        return trigger('hoverToggle', [
+-            state('notHover', style({
+-                backgroundColor: a.backgroundColorDefault
+-            })),
+-            state('hover', style({
+-                backgroundColor: a.backgroundColorHover
+-            })),
+-            transition('notHover => hover', [
+-                animate(a.timings)
+-            ]),
+-            transition('hover => notHover', [
+-                animate(a.timings)
+-            ]),
+-        ]);
+-    }
+-}
+-
+-export const rowHoverAnimation = RowHoverAnimation.build();
+-
+diff --git a/frontend/src/srvcorp/column-body/column-body.component.ts b/frontend/src/srvcorp/column-body/column-body.component.ts
+index e4ae9e4..1d50826 100644
+--- a/frontend/src/srvcorp/column-body/column-body.component.ts
++++ b/frontend/src/srvcorp/column-body/column-body.component.ts
+@@ -2,7 +2,7 @@ import {Component, Input, OnInit} from '@angular/core';
+ import {DataType} from "../utils/data-type";
+ 
+ @Component({
+-  selector: 'td[srvcorp-column-header]',
++  selector: '[srvcorpColumnBody]',
+   templateUrl: './column-body.component.html',
+   styleUrls: ['./column-body.component.css']
+ })
+diff --git a/frontend/src/srvcorp/column-header/column-header.component.ts b/frontend/src/srvcorp/column-header/column-header.component.ts
+index 279c6bb..c041b88 100644
+--- a/frontend/src/srvcorp/column-header/column-header.component.ts
++++ b/frontend/src/srvcorp/column-header/column-header.component.ts
+@@ -4,7 +4,7 @@ import {TableHeaderDirective} from "../table/table-header.directive";
+ import {ColumnHeaderDirective} from "./column-header.directive";
+ 
+ @Component({
+-  selector: 'th[srvcorp-column-header]',
++  selector: '[srvcorpColumnHeader]',
+   templateUrl: './column-header.component.html',
+   styleUrls: ['./column-header.component.css']
+ })
+diff --git a/frontend/src/srvcorp/entities/mouse-state.ts b/frontend/src/srvcorp/entities/mouse-state.ts
 new file mode 100644
-index 0000000..6a571a5
+index 0000000..2220f17
 --- /dev/null
-+++ b/frontend/src/srvcorp/animations/row-hover.animation.ts
-@@ -0,0 +1,28 @@
-+import {animate, animateChild, group, query, state, style, transition, trigger} from "@angular/animations";
++++ b/frontend/src/srvcorp/entities/mouse-state.ts
+@@ -0,0 +1,11 @@
 +
-+
-+export class RowHoverAnimation {
-+    protected timings: string = '50ms ease-out';
-+    protected backgroundColorDefault:string = 'white';
-+    protected backgroundColorHover:string = '#ededed';
-+    static build() {
-+        let a = new this();
-+        return trigger('hoverToggle', [
-+            state('notHover', style({
-+                backgroundColor: a.backgroundColorDefault
-+            })),
-+            state('hover', style({
-+                backgroundColor: a.backgroundColorHover
-+            })),
-+            transition('notHover => hover', [
-+                animate(a.timings)
-+            ]),
-+            transition('hover => notHover', [
-+                animate(a.timings)
-+            ]),
-+        ]);
-+    }
++export enum MouseButtonState {
++  free,
++  pressed
 +}
 +
-+export const rowHoverAnimation = RowHoverAnimation.build();
++export class MouseState {
++  firstButton: MouseButtonState = MouseButtonState.free;
++  secondButton: MouseButtonState = MouseButtonState.free;
++  thirdButton: MouseButtonState = MouseButtonState.free;
++}
+\ No newline at end of file
+diff --git a/frontend/src/srvcorp/entities/row-state.ts b/frontend/src/srvcorp/entities/row-state.ts
+new file mode 100644
+index 0000000..686c3e6
+--- /dev/null
++++ b/frontend/src/srvcorp/entities/row-state.ts
+@@ -0,0 +1,7 @@
 +
-diff --git a/frontend/src/srvcorp/row/row.component.ts b/frontend/src/srvcorp/row/row.component.ts
-index 7c0fa3c..18449e9 100644
---- a/frontend/src/srvcorp/row/row.component.ts
-+++ b/frontend/src/srvcorp/row/row.component.ts
-@@ -5,6 +5,7 @@ import {RowDirective} from "./row.directive";
- import {ColumnComponent} from "../column/column.component";
- import {ColumnHeaderComponent} from "../column-header/column-header.component";
++
++export class RowState {
++    hover:boolean;
++    selected:boolean;
++    checked:boolean;
++}
+\ No newline at end of file
+diff --git a/frontend/src/srvcorp/row-header/row-header.component.html b/frontend/src/srvcorp/row-header/row-header.component.html
+index 10f8e60..d2f098b 100644
+--- a/frontend/src/srvcorp/row-header/row-header.component.html
++++ b/frontend/src/srvcorp/row-header/row-header.component.html
+@@ -1 +1 @@
+-<div srvcorp-row-header-host></div>
++<ng-content srvcorpRowHeaderHost></ng-content>
+\ No newline at end of file
+diff --git a/frontend/src/srvcorp/row-header/row-header.component.ts b/frontend/src/srvcorp/row-header/row-header.component.ts
+index f79675c..8766c4f 100644
+--- a/frontend/src/srvcorp/row-header/row-header.component.ts
++++ b/frontend/src/srvcorp/row-header/row-header.component.ts
+@@ -7,7 +7,7 @@ import {ColumnHeaderComponent} from "../column-header/column-header.component";
  import {ColumnBodyComponent} from "../column-body/column-body.component";
-+import {rowHoverAnimation} from "../animations/row-hover.animation";
  
  @Component({
-   selector: 'tr[srvcorp-row]',
-diff --git a/frontend/src/srvcorp/table/table.component.html b/frontend/src/srvcorp/table/table.component.html
-index 9199715..94914f0 100644
---- a/frontend/src/srvcorp/table/table.component.html
-+++ b/frontend/src/srvcorp/table/table.component.html
-@@ -1,6 +1,14 @@
- <table class="table">
-   <thead srvcorp-table-header-host>
-+    <tr srvcorp-row-header [columns]="columns"></tr>
-   </thead>
-   <tbody srvcorp-table-body-host>
-+    <tr srvcorp-row
-+        *ngFor="let dataItem of data; let i = index"
-+        [dataItem]="dataItem"
-+        [columns]="columns"
-+        [@hoverToggle]="rows[i].hover ? 'hover' : 'notHover'"
-+        (mouseenter)="rows[i].hover=true"
-+        (mouseleave)="rows[i].hover=false"></tr>
-   </tbody>
- </table>
-diff --git a/frontend/src/srvcorp/table/table.component.ts b/frontend/src/srvcorp/table/table.component.ts
-index d667801..fdc383e 100644
---- a/frontend/src/srvcorp/table/table.component.ts
-+++ b/frontend/src/srvcorp/table/table.component.ts
-@@ -15,27 +15,33 @@ import {ColumnHeaderComponent} from "../column-header/column-header.component";
- import {ColumnBodyComponent} from "../column-body/column-body.component";
- import {RowComponent} from "../row/row.component";
- import {RowHeaderComponent} from "../row-header/row-header.component";
-+import {rowHoverAnimation} from "../animations/row-hover.animation";
- 
- @Component({
-   selector: 'srvcorp-table',
-   templateUrl: './table.component.html',
--  styleUrls: ['./table.component.css']
-+  styleUrls: ['./table.component.css'],
-+  animations: [rowHoverAnimation]
+-  selector: 'tr[srvcorp-row-header]',
++  selector: '[srvcorpRowHeader]',
+   templateUrl: './row-header.component.html',
+   styleUrls: ['./row-header.component.css']
  })
- export class TableComponent implements OnInit, AfterContentInit {
-   @Input() data:any[];
-   @ViewChild(TableHeaderDirective) headerHost: TableHeaderDirective;
-   @ViewChild(TableBodyDirective) bodyHost: TableBodyDirective;
-   @ContentChildren(ColumnComponent) columns: QueryList<ColumnComponent>;
-+  rows: any[];
- 
+@@ -18,9 +18,12 @@ export class RowHeaderComponent implements OnInit {
    constructor(private componentFactoryResolver: ComponentFactoryResolver) { }
  
    ngOnInit() {
--
-+      this.rows = [];
-+      this.data.forEach((dataItem, i, ar) => {
-+          this.rows.push({hover: false});//TODO: need move to class
-+      });
-   }
- 
-   ngAfterContentInit(): void {
-     console.log(this.columns);
 -    this.loadComponent();
 +    //this.loadComponent();
    }
  
++  /**
++   * @deprecated
++   */
    private loadComponent() {
-@@ -48,7 +54,7 @@ export class TableComponent implements OnInit, AfterContentInit {
-     let bodyRef = this.bodyHost.elementRef;
-     headerRef.clear();
-     bodyRef.clear();
--    let rowHeader = bodyRef.createComponent(rowHeaderFactory);
-+    let rowHeader = headerRef.createComponent(rowHeaderFactory);
-     rowHeader.instance.columns = this.columns;
+     let headerColumnFactory = this.componentFactoryResolver.resolveComponentFactory(ColumnHeaderComponent);
+ 
+diff --git a/frontend/src/srvcorp/row-header/row-header.directive.ts b/frontend/src/srvcorp/row-header/row-header.directive.ts
+index 93f4b44..7b2381f 100644
+--- a/frontend/src/srvcorp/row-header/row-header.directive.ts
++++ b/frontend/src/srvcorp/row-header/row-header.directive.ts
+@@ -1,7 +1,7 @@
+ import {Directive, ElementRef, ViewContainerRef} from "@angular/core";
+ 
+ @Directive({
+-    selector: '[srvcorp-row-header-host]',
++    selector: '[srvcorpRowHeaderHost]',
+ })
+ export class RowHeaderDirective {
+     constructor(public elementRef: ViewContainerRef) { }
+diff --git a/frontend/src/srvcorp/row/row.component.html b/frontend/src/srvcorp/row/row.component.html
+index 48ea94b..404b445 100644
+--- a/frontend/src/srvcorp/row/row.component.html
++++ b/frontend/src/srvcorp/row/row.component.html
+@@ -1 +1 @@
+-<div srvcorp-row-host></div>
++<ng-content srvcorp-row-host></ng-content>
+diff --git a/frontend/src/srvcorp/row/row.component.ts b/frontend/src/srvcorp/row/row.component.ts
+index 18449e9..ac849b8 100644
+--- a/frontend/src/srvcorp/row/row.component.ts
++++ b/frontend/src/srvcorp/row/row.component.ts
+@@ -5,10 +5,10 @@ import {RowDirective} from "./row.directive";
+ import {ColumnComponent} from "../column/column.component";
+ import {ColumnHeaderComponent} from "../column-header/column-header.component";
+ import {ColumnBodyComponent} from "../column-body/column-body.component";
+-import {rowHoverAnimation} from "../animations/row-hover.animation";
++import {rowBacklightAnimation} from "../animations/row-backlight.animation";
+ 
+ @Component({
+-  selector: 'tr[srvcorp-row]',
++  selector: '[srvcorpRow]',
+   templateUrl: './row.component.html',
+   styleUrls: ['./row.component.css']
+ })
+@@ -20,9 +20,12 @@ export class RowComponent implements OnInit {
+   constructor(private componentFactoryResolver: ComponentFactoryResolver) { }
+ 
+   ngOnInit() {
+-    this.loadComponent();
++    //this.loadComponent();
+   }
+ 
++  /**
++   * @deprecated
++   */
+   private loadComponent() {
+     let bodyColumnFactory = this.componentFactoryResolver.resolveComponentFactory(ColumnBodyComponent);
+ 
+diff --git a/frontend/src/srvcorp/table/table-body.directive.ts b/frontend/src/srvcorp/table/table-body.directive.ts
+index b34eca5..2e30b2a 100644
+--- a/frontend/src/srvcorp/table/table-body.directive.ts
++++ b/frontend/src/srvcorp/table/table-body.directive.ts
+@@ -1,7 +1,7 @@
+ import {Directive, ElementRef, ViewContainerRef} from "@angular/core";
+ 
+ @Directive({
+-    selector: '[srvcorp-table-body-host]',
++    selector: '[srvcorpTableBodyHost]',
+ })
+ export class TableBodyDirective {
+     constructor(public elementRef: ViewContainerRef) { }
+diff --git a/frontend/src/srvcorp/table/table-header.directive.ts b/frontend/src/srvcorp/table/table-header.directive.ts
+index 84fafac..926d82e 100644
+--- a/frontend/src/srvcorp/table/table-header.directive.ts
++++ b/frontend/src/srvcorp/table/table-header.directive.ts
+@@ -1,7 +1,7 @@
+ import {Directive, ElementRef, ViewContainerRef} from "@angular/core";
+ 
+ @Directive({
+-    selector: '[srvcorp-table-header-host]',
++    selector: '[srvcorpTableHeaderHost]',
+ })
+ export class TableHeaderDirective {
+     constructor(public elementRef: ViewContainerRef) { }
+diff --git a/frontend/src/srvcorp/table/table.component.html b/frontend/src/srvcorp/table/table.component.html
+index 94914f0..099c12a 100644
+--- a/frontend/src/srvcorp/table/table.component.html
++++ b/frontend/src/srvcorp/table/table.component.html
+@@ -1,14 +1,26 @@
+ <table class="table">
+-  <thead srvcorp-table-header-host>
+-    <tr srvcorp-row-header [columns]="columns"></tr>
++  <thead srvcorpTableHeaderHost>
++    <tr srvcorpRowHeader [columns]="columns">
++      <th srvcorpColumnHeader
++          *ngFor="let column of columns; let i = index"
++          [value]="column.title"
++          [customContent]="column.header?column.header.elementRef:null"></th>
++    </tr>
+   </thead>
+-  <tbody srvcorp-table-body-host>
+-    <tr srvcorp-row
++  <tbody srvcorpTableBodyHost>
++    <tr srvcorpRow
+         *ngFor="let dataItem of data; let i = index"
+         [dataItem]="dataItem"
+         [columns]="columns"
+-        [@hoverToggle]="rows[i].hover ? 'hover' : 'notHover'"
+-        (mouseenter)="rows[i].hover=true"
+-        (mouseleave)="rows[i].hover=false"></tr>
++        [@backlightToggle]="getRowStateName(i)"
++        (mousedown)="rowMouseDown($event, i)"
++        (mouseup)="rowMouseUp($event, i)"
++        (mouseenter)="rowMouseEnter($event, i)"
++        (mouseleave)="rowMouseLeave($event, i)">
++      <td srvcorpColumnBody
++          *ngFor="let column of columns; let i = index"
++          [value]="dataItem[column.field]"
++          [dataType]="column.dataType"></td>
++    </tr>
+   </tbody>
+ </table>
+diff --git a/frontend/src/srvcorp/table/table.component.ts b/frontend/src/srvcorp/table/table.component.ts
+index fdc383e..1d88bad 100644
+--- a/frontend/src/srvcorp/table/table.component.ts
++++ b/frontend/src/srvcorp/table/table.component.ts
+@@ -2,12 +2,12 @@ import {
+   AfterContentInit,
+   Component,
+   ComponentFactoryResolver,
+-  ContentChildren,
++  ContentChildren, HostListener,
+   Input,
+-  OnInit, QueryList,
++  OnInit,
++  QueryList,
+   ViewChild
+ } from '@angular/core';
+-import {Menu} from "../../app/entities/menu";
+ import {TableHeaderDirective} from "./table-header.directive";
+ import {TableBodyDirective} from "./table-body.directive";
+ import {ColumnComponent} from "../column/column.component";
+@@ -15,28 +15,33 @@ import {ColumnHeaderComponent} from "../column-header/column-header.component";
+ import {ColumnBodyComponent} from "../column-body/column-body.component";
+ import {RowComponent} from "../row/row.component";
+ import {RowHeaderComponent} from "../row-header/row-header.component";
+-import {rowHoverAnimation} from "../animations/row-hover.animation";
++import {rowBacklightAnimation} from "../animations/row-backlight.animation";
++import {RowState} from "../entities/row-state";
++import {MouseButtonState, MouseState} from "../entities/mouse-state";
+ 
+ @Component({
+   selector: 'srvcorp-table',
+   templateUrl: './table.component.html',
+   styleUrls: ['./table.component.css'],
+-  animations: [rowHoverAnimation]
++  animations: [rowBacklightAnimation]
+ })
+ export class TableComponent implements OnInit, AfterContentInit {
+-  @Input() data:any[];
++  @Input() data: any[];
+   @ViewChild(TableHeaderDirective) headerHost: TableHeaderDirective;
+   @ViewChild(TableBodyDirective) bodyHost: TableBodyDirective;
+   @ContentChildren(ColumnComponent) columns: QueryList<ColumnComponent>;
+-  rows: any[];
++  rowsStates: RowState[];
++  mouseState: MouseState = new MouseState();
++  rowSelectState:boolean = false;
++  rowSelectStartIndex:number = -1;
+ 
+-  constructor(private componentFactoryResolver: ComponentFactoryResolver) { }
++  constructor(private componentFactoryResolver: ComponentFactoryResolver) {}
+ 
+   ngOnInit() {
+-      this.rows = [];
+-      this.data.forEach((dataItem, i, ar) => {
+-          this.rows.push({hover: false});//TODO: need move to class
+-      });
++    this.rowsStates = [];
++    this.data.forEach((dataItem, i, ar) => {
++      this.rowsStates.push(new RowState());
++    });
+   }
+ 
+   ngAfterContentInit(): void {
+@@ -44,6 +49,95 @@ export class TableComponent implements OnInit, AfterContentInit {
+     //this.loadComponent();
+   }
+ 
++  getRowStateName(index:number):string {
++    let row = this.rowsStates[index];
++    if (row.checked) {
++      return 'checked';
++    } else if (row.selected) {
++      return 'selected';
++    } else if (row.hover) {
++      return 'hover';
++    }
++    return 'clear';
++  }
++
++  rowMouseEnter(event, index:number) {
++    this.mouseStateUpdate(event);
++    this.rowsStates[index].hover=true;
++    if (this.getMouseFirstButtonState(event)) {
++      if ( index!=this.rowSelectStartIndex) {
++        let i = 0;
++        if (this.rowSelectStartIndex > index) {
++          i = 1;
++        } else if (this.rowSelectStartIndex < index) {
++          i = -1;
++        }
++        this.rowsStates[index+i].checked = this.rowSelectState;
++      }
++      this.rowsStates[index].checked = this.rowSelectState;
++    }
++  }
++
++  rowMouseLeave(event, index:number) {
++    this.mouseStateUpdate(event);
++    this.rowsStates[index].hover=false;
++    if (this.getMouseFirstButtonState(event) && index!=this.rowSelectStartIndex) {
++      this.rowsStates[index].checked = !this.rowSelectState;
++    }
++  }
++
++  rowMouseDown(event, index:number) {
++    this.mouseStateUpdate(event);
++    this.rowSelectStartIndex = index;
++    if (this.getMouseFirstButtonState(event)) {
++      this.rowSelectState = !this.rowsStates[index].checked;
++      this.rowsStates[index].checked = this.rowSelectState;
++    }
++  }
++
++  rowMouseUp(event, index:number) {
++    this.mouseStateUpdate(event);
++    this.mouseState.firstButton = MouseButtonState.free;
++  }
++
++  @HostListener('window:mouseup', ['$event'])
++  mouseUp(event){
++    this.mouseState.firstButton = MouseButtonState.free;
++  }
++
++  private mouseStateUpdate(event) {
++    if (this.getMouseFirstButtonState(event)) {
++      this.mouseState.firstButton = MouseButtonState.pressed;
++    } else {
++      this.mouseState.firstButton = MouseButtonState.free;
++    }
++    if (this.getMouseSecondButtonState(event)) {
++      this.mouseState.secondButton = MouseButtonState.pressed;
++    } else {
++      this.mouseState.secondButton = MouseButtonState.free;
++    }
++    if (this.getMouseThirdButtonState(event)) {
++      this.mouseState.thirdButton = MouseButtonState.pressed;
++    } else {
++      this.mouseState.thirdButton = MouseButtonState.free;
++    }
++  }
++
++  private getMouseFirstButtonState(event) {
++    return (event.buttons & 1) == 1;
++  }
++
++  private getMouseSecondButtonState(event) {
++    return (event.buttons & 1) == 1;
++  }
++
++  private getMouseThirdButtonState(event) {
++    return (event.buttons & 1) == 1;
++  }
++
++  /**
++   * @deprecated
++   */
+   private loadComponent() {
+     let headerColumnFactory = this.componentFactoryResolver.resolveComponentFactory(ColumnHeaderComponent);
+     let bodyColumnFactory = this.componentFactoryResolver.resolveComponentFactory(ColumnBodyComponent);
+-- 
+2.19.2.windows.1
+
+__FILES_SPLITTER__From 030cb8f8115a60ab140e8cfc278d7f6dcc477d8e Mon Sep 17 00:00:00 2001
+From: "sarvar" <sarkhas@mail.ru>
+Date: Wed, 15 May 2019 15:43:34 +0500
+Subject: [PATCH 2/3] body column custom template made
+
+---
+ .../column-body/column-body.component.html    |  3 ++-
+ .../column-body/column-body.component.ts      | 19 +++++++++++++++++--
+ .../column-body/column-body.directive.ts      |  8 ++++++++
+ frontend/src/srvcorp/srvcorp.module.ts        |  4 +++-
+ .../src/srvcorp/table/table.component.html    |  3 ++-
+ 5 files changed, 32 insertions(+), 5 deletions(-)
+ create mode 100644 frontend/src/srvcorp/column-body/column-body.directive.ts
+
+diff --git a/frontend/src/srvcorp/column-body/column-body.component.html b/frontend/src/srvcorp/column-body/column-body.component.html
+index f0136f9..b42df3a 100644
+--- a/frontend/src/srvcorp/column-body/column-body.component.html
++++ b/frontend/src/srvcorp/column-body/column-body.component.html
+@@ -1 +1,2 @@
+-<div>{{value}}</div>
++<div *ngIf="!customContent">{{value}}</div>
++<div srvcorpColumnBodyHost></div>
+diff --git a/frontend/src/srvcorp/column-body/column-body.component.ts b/frontend/src/srvcorp/column-body/column-body.component.ts
+index 1d50826..06559b2 100644
+--- a/frontend/src/srvcorp/column-body/column-body.component.ts
++++ b/frontend/src/srvcorp/column-body/column-body.component.ts
+@@ -1,18 +1,33 @@
+-import {Component, Input, OnInit} from '@angular/core';
++import {AfterContentInit, Component, Input, OnInit, TemplateRef, ViewChild} from '@angular/core';
+ import {DataType} from "../utils/data-type";
++import {ColumnHeaderDirective} from "../column-header/column-header.directive";
++import {ColumnBodyDirective} from "./column-body.directive";
+ 
+ @Component({
+   selector: '[srvcorpColumnBody]',
+   templateUrl: './column-body.component.html',
+   styleUrls: ['./column-body.component.css']
+ })
+-export class ColumnBodyComponent implements OnInit {
++export class ColumnBodyComponent implements OnInit, AfterContentInit {
+   @Input() value: String;
+   @Input() dataType: DataType;
++  @Input() customContent: TemplateRef<any>;
++  @ViewChild(ColumnBodyDirective) columnBodyHost: ColumnBodyDirective;
+ 
+   constructor() { }
+ 
+   ngOnInit() {
+   }
+ 
++  ngAfterContentInit(): void {
++    this.loadComponent();
++  }
++
++  private loadComponent() {
++    if (!this.customContent)
++      return;
++    let viewRef = this.columnBodyHost.elementRef;
++    viewRef.clear();
++    viewRef.createEmbeddedView(this.customContent,{$val:this.value});
++  }
+ }
+diff --git a/frontend/src/srvcorp/column-body/column-body.directive.ts b/frontend/src/srvcorp/column-body/column-body.directive.ts
+new file mode 100644
+index 0000000..714155e
+--- /dev/null
++++ b/frontend/src/srvcorp/column-body/column-body.directive.ts
+@@ -0,0 +1,8 @@
++import {Directive, ElementRef, TemplateRef, ViewContainerRef} from "@angular/core";
++
++@Directive({
++    selector: '[srvcorpColumnBodyHost]',
++})
++export class ColumnBodyDirective {
++    constructor(public elementRef: ViewContainerRef) { }
++}
+diff --git a/frontend/src/srvcorp/srvcorp.module.ts b/frontend/src/srvcorp/srvcorp.module.ts
+index b9a5291..7968067 100644
+--- a/frontend/src/srvcorp/srvcorp.module.ts
++++ b/frontend/src/srvcorp/srvcorp.module.ts
+@@ -15,6 +15,7 @@ import {CellComponent} from "./cell/cell.component";
+ import {HeaderDirective} from "./column/header.directive";
+ import {CellDirective} from "./column/cell.directive";
+ import {ColumnHeaderDirective} from "./column-header/column-header.directive";
++import {ColumnBodyDirective} from "./column-body/column-body.directive";
+ 
+ @NgModule({
+   declarations: [
+@@ -32,7 +33,8 @@ import {ColumnHeaderDirective} from "./column-header/column-header.directive";
+     CellComponent,
+     HeaderDirective,
+     CellDirective,
+-    ColumnHeaderDirective
++    ColumnHeaderDirective,
++    ColumnBodyDirective
+   ],
+   exports: [
+     TableComponent,
+diff --git a/frontend/src/srvcorp/table/table.component.html b/frontend/src/srvcorp/table/table.component.html
+index 099c12a..5cf9cc0 100644
+--- a/frontend/src/srvcorp/table/table.component.html
++++ b/frontend/src/srvcorp/table/table.component.html
+@@ -20,7 +20,8 @@
+       <td srvcorpColumnBody
+           *ngFor="let column of columns; let i = index"
+           [value]="dataItem[column.field]"
+-          [dataType]="column.dataType"></td>
++          [dataType]="column.dataType"
++          [customContent]="column.cell?column.cell.elementRef:null"></td>
+     </tr>
+   </tbody>
+ </table>
+-- 
+2.19.2.windows.1
+
+__FILES_SPLITTER__From 8016a72bb6d12338eace74d9b1a17a5d1db2732c Mon Sep 17 00:00:00 2001
+From: "sarvar" <sarkhas@mail.ru>
+Date: Wed, 15 May 2019 17:09:01 +0500
+Subject: [PATCH 3/3] row and cell hover effects
+
+---
+ .../app/menu-table/menu-table.component.html  | 11 +++--
+ .../animations/cell-backlight.animation.ts    | 35 ++++++++++++++
+ .../animations/row-backlight.animation.ts     | 12 ++---
+ .../src/srvcorp/column/column.component.ts    |  1 +
+ frontend/src/srvcorp/entities/cell-state.ts   |  7 +++
+ frontend/src/srvcorp/entities/row-state.ts    |  2 +-
+ .../src/srvcorp/table/table.component.html    | 15 +++---
+ frontend/src/srvcorp/table/table.component.ts | 48 +++++++++++++++++--
+ 8 files changed, 107 insertions(+), 24 deletions(-)
+ create mode 100644 frontend/src/srvcorp/animations/cell-backlight.animation.ts
+ create mode 100644 frontend/src/srvcorp/entities/cell-state.ts
+
+diff --git a/frontend/src/app/menu-table/menu-table.component.html b/frontend/src/app/menu-table/menu-table.component.html
+index b8fb6cb..aacc09d 100644
+--- a/frontend/src/app/menu-table/menu-table.component.html
++++ b/frontend/src/app/menu-table/menu-table.component.html
+@@ -1,9 +1,10 @@
+ 
+-<srvcorp-table [data]="menu">
+-  <srvcorp-column field="id" dataType="number" title="ID"></srvcorp-column>
+-  <srvcorp-column field="name" dataType="string" title="Name"></srvcorp-column>
+-  <srvcorp-column field="url" dataType="string" title="URL">
++<h1>Menu table</h1>
++<srvcorp-table [data]="menu" [columnCount]="3">
++  <srvcorp-column field="id" [dataType]="number" title="ID"></srvcorp-column>
++  <srvcorp-column field="name" [dataType]="string" title="Name" [editable]="true"></srvcorp-column>
++  <srvcorp-column field="url" [dataType]="string" title="URL" [editable]="true">
+     <ng-template srvcorpHeader>URL custom</ng-template>
+-    <ng-template srvcorpCell let-val>Cell custom {{val}}</ng-template>
++    <ng-template srvcorpCell let-val="$val">Cell custom {{val}}</ng-template>
+   </srvcorp-column>
+ </srvcorp-table>
+diff --git a/frontend/src/srvcorp/animations/cell-backlight.animation.ts b/frontend/src/srvcorp/animations/cell-backlight.animation.ts
+new file mode 100644
+index 0000000..c1d7081
+--- /dev/null
++++ b/frontend/src/srvcorp/animations/cell-backlight.animation.ts
+@@ -0,0 +1,35 @@
++import {animate, animateChild, group, query, state, style, transition, trigger} from "@angular/animations";
++
++
++export class CellBacklightAnimation {
++  protected timings: string = '50ms ease-out';
++  protected backgroundColorDefault: string = '#ffffff00';
++  protected backgroundColorHover: string = '#ededed';
++  protected backgroundColorActive: string = '#e5e5e5';
++  protected backgroundColorSelected: string = '#e5e5e5';
++  protected borderColorSelected: string = '#fffd83';
++
++  static build() {
++    let a = new this();
++    return trigger('cellBacklightToggle', [
++      state('clear', style({
++        backgroundColor: a.backgroundColorDefault
++      })),
++      state('hover', style({
++        backgroundColor: a.backgroundColorHover
++      })),
++      state('active', style({
++        backgroundColor: a.backgroundColorActive
++      })),
++      state('selected', style({
++        backgroundColor: a.backgroundColorSelected
++      })),
++      /*transition('* <=> *', [
++        animate(a.timings)
++      ]),*/
++    ]);
++  }
++}
++
++export const cellBacklightAnimation = CellBacklightAnimation.build();
++
+diff --git a/frontend/src/srvcorp/animations/row-backlight.animation.ts b/frontend/src/srvcorp/animations/row-backlight.animation.ts
+index 6f8bea9..730541a 100644
+--- a/frontend/src/srvcorp/animations/row-backlight.animation.ts
++++ b/frontend/src/srvcorp/animations/row-backlight.animation.ts
+@@ -5,27 +5,27 @@ export class RowBacklightAnimation {
+   protected timings: string = '50ms ease-out';
+   protected backgroundColorDefault: string = 'white';
+   protected backgroundColorHover: string = '#ededed';
+-  protected backgroundColorSelected: string = '#e5e5e5';
++  protected backgroundColorActive: string = '#e5e5e5';
+   protected backgroundColorChecked: string = '#fffd83';
+ 
+   static build() {
+     let a = new this();
+-    return trigger('backlightToggle', [
++    return trigger('rowBacklightToggle', [
+       state('clear', style({
+         backgroundColor: a.backgroundColorDefault
+       })),
+       state('hover', style({
+         backgroundColor: a.backgroundColorHover
+       })),
+-      state('selected', style({
+-        backgroundColor: a.backgroundColorSelected
++      state('active', style({
++        backgroundColor: a.backgroundColorActive
+       })),
+       state('checked', style({
+         backgroundColor: a.backgroundColorChecked
+       })),
+-      transition('* <=> *', [
++      /*transition('* <=> *', [
+         animate(a.timings)
+-      ]),
++      ]),*/
+     ]);
+   }
+ }
+diff --git a/frontend/src/srvcorp/column/column.component.ts b/frontend/src/srvcorp/column/column.component.ts
+index c3d7974..a798731 100644
+--- a/frontend/src/srvcorp/column/column.component.ts
++++ b/frontend/src/srvcorp/column/column.component.ts
+@@ -14,6 +14,7 @@ export class ColumnComponent implements OnInit, AfterContentInit {
+   @Input() field: string;
+   @Input() dataType: DataType;
+   @Input() title: string;
++  @Input() editable: boolean = false;
+   @ContentChild(HeaderDirective) header: HeaderDirective;
+   @ContentChild(CellDirective) cell: CellDirective;
+ 
+diff --git a/frontend/src/srvcorp/entities/cell-state.ts b/frontend/src/srvcorp/entities/cell-state.ts
+new file mode 100644
+index 0000000..3bc3005
+--- /dev/null
++++ b/frontend/src/srvcorp/entities/cell-state.ts
+@@ -0,0 +1,7 @@
++
++
++export class CellState {
++  hover:boolean;
++  active:boolean;
++  selected:boolean;
++}
+\ No newline at end of file
+diff --git a/frontend/src/srvcorp/entities/row-state.ts b/frontend/src/srvcorp/entities/row-state.ts
+index 686c3e6..8dc7672 100644
+--- a/frontend/src/srvcorp/entities/row-state.ts
++++ b/frontend/src/srvcorp/entities/row-state.ts
+@@ -2,6 +2,6 @@
+ 
+ export class RowState {
+     hover:boolean;
+-    selected:boolean;
++    active:boolean;
+     checked:boolean;
+ }
+\ No newline at end of file
+diff --git a/frontend/src/srvcorp/table/table.component.html b/frontend/src/srvcorp/table/table.component.html
+index 5cf9cc0..140f019 100644
+--- a/frontend/src/srvcorp/table/table.component.html
++++ b/frontend/src/srvcorp/table/table.component.html
+@@ -12,16 +12,17 @@
+         *ngFor="let dataItem of data; let i = index"
+         [dataItem]="dataItem"
+         [columns]="columns"
+-        [@backlightToggle]="getRowStateName(i)"
+-        (mousedown)="rowMouseDown($event, i)"
+-        (mouseup)="rowMouseUp($event, i)"
+-        (mouseenter)="rowMouseEnter($event, i)"
+-        (mouseleave)="rowMouseLeave($event, i)">
++        [@rowBacklightToggle]="getRowStateName(i)">
+       <td srvcorpColumnBody
+-          *ngFor="let column of columns; let i = index"
++          *ngFor="let column of columns; let j = index"
+           [value]="dataItem[column.field]"
+           [dataType]="column.dataType"
+-          [customContent]="column.cell?column.cell.elementRef:null"></td>
++          [customContent]="column.cell?column.cell.elementRef:null"
++          [@cellBacklightToggle]="getCellStateName(i,j)"
++          (mousedown)="cellMouseDown($event, i, j)"
++          (mouseup)="cellMouseUp($event, i, j)"
++          (mouseenter)="cellMouseEnter($event, i, j)"
++          (mouseleave)="cellMouseLeave($event, i, j)"></td>
+     </tr>
+   </tbody>
+ </table>
+diff --git a/frontend/src/srvcorp/table/table.component.ts b/frontend/src/srvcorp/table/table.component.ts
+index 1d88bad..75de9f1 100644
+--- a/frontend/src/srvcorp/table/table.component.ts
++++ b/frontend/src/srvcorp/table/table.component.ts
+@@ -18,19 +18,23 @@ import {RowHeaderComponent} from "../row-header/row-header.component";
+ import {rowBacklightAnimation} from "../animations/row-backlight.animation";
+ import {RowState} from "../entities/row-state";
+ import {MouseButtonState, MouseState} from "../entities/mouse-state";
++import {CellState} from "../entities/cell-state";
++import {cellBacklightAnimation} from "../animations/cell-backlight.animation";
+ 
+ @Component({
+   selector: 'srvcorp-table',
+   templateUrl: './table.component.html',
+   styleUrls: ['./table.component.css'],
+-  animations: [rowBacklightAnimation]
++  animations: [rowBacklightAnimation, cellBacklightAnimation]
+ })
+ export class TableComponent implements OnInit, AfterContentInit {
+   @Input() data: any[];
++  @Input() columnCount: number;
+   @ViewChild(TableHeaderDirective) headerHost: TableHeaderDirective;
+   @ViewChild(TableBodyDirective) bodyHost: TableBodyDirective;
+   @ContentChildren(ColumnComponent) columns: QueryList<ColumnComponent>;
+   rowsStates: RowState[];
++  cellsStates: CellState[][];
+   mouseState: MouseState = new MouseState();
+   rowSelectState:boolean = false;
+   rowSelectStartIndex:number = -1;
+@@ -39,13 +43,18 @@ export class TableComponent implements OnInit, AfterContentInit {
+ 
+   ngOnInit() {
+     this.rowsStates = [];
++    this.cellsStates = [];
      this.data.forEach((dataItem, i, ar) => {
-       let row = bodyRef.createComponent(rowFactory);
++      let cellsRow = [];
++      for(let i=0;i<this.columnCount; i++) {
++        cellsRow.push(new CellState());
++      }
++      this.cellsStates.push(cellsRow);
+       this.rowsStates.push(new RowState());
+     });
+   }
+ 
+   ngAfterContentInit(): void {
+-    console.log(this.columns);
+     //this.loadComponent();
+   }
+ 
+@@ -53,14 +62,26 @@ export class TableComponent implements OnInit, AfterContentInit {
+     let row = this.rowsStates[index];
+     if (row.checked) {
+       return 'checked';
+-    } else if (row.selected) {
+-      return 'selected';
++    } else if (row.active) {
++      return 'active';
+     } else if (row.hover) {
+       return 'hover';
+     }
+     return 'clear';
+   }
+ 
++  getCellStateName(rowIndex:number, cellIndex:number):string {
++    let cell = this.cellsStates[rowIndex][cellIndex];
++    if (cell.active) {
++      return 'active';
++    } else if (cell.selected) {
++      return 'selected';
++    } else if (cell.hover) {
++      return 'hover';
++    }
++    return 'clear';
++  }
++
+   rowMouseEnter(event, index:number) {
+     this.mouseStateUpdate(event);
+     this.rowsStates[index].hover=true;
+@@ -97,7 +118,24 @@ export class TableComponent implements OnInit, AfterContentInit {
+ 
+   rowMouseUp(event, index:number) {
+     this.mouseStateUpdate(event);
+-    this.mouseState.firstButton = MouseButtonState.free;
++  }
++
++  cellMouseEnter(event, rowIndex:number, cellIndex:number) {
++    this.rowMouseEnter(event,rowIndex);
++    this.cellsStates[rowIndex][cellIndex].hover=true;
++  }
++
++  cellMouseLeave(event, rowIndex:number, cellIndex:number) {
++    this.rowMouseLeave(event,rowIndex);
++    this.cellsStates[rowIndex][cellIndex].hover=false;
++  }
++
++  cellMouseDown(event, rowIndex:number, cellIndex:number) {
++    this.rowMouseDown(event,rowIndex);
++  }
++
++  cellMouseUp(event, rowIndex:number, cellIndex:number) {
++    this.rowMouseUp(event,rowIndex);
+   }
+ 
+   @HostListener('window:mouseup', ['$event'])
 -- 
 2.19.2.windows.1
 
