@@ -1,878 +1,253 @@
-From 881df2697add30a6272a9bd1df97f16c7a37dd29 Mon Sep 17 00:00:00 2001
+From 8bd2264ce861ec2da58067facfd745e1be524288 Mon Sep 17 00:00:00 2001
 From: "sarvar" <sarkhas@mail.ru>
-Date: Wed, 15 May 2019 11:47:52 +0500
-Subject: [PATCH 1/3] table dinamic generate replaced with template
+Date: Mon, 20 May 2019 11:35:48 +0500
+Subject: [PATCH] PWA change SW from vinila to workbox, and some PWA install
+ improvments
 
 ---
- .../animations/row-backlight.animation.ts     |  34 +++++
- .../srvcorp/animations/row-hover.animation.ts |  28 -----
- .../column-body/column-body.component.ts      |   2 +-
- .../column-header/column-header.component.ts  |   2 +-
- frontend/src/srvcorp/entities/mouse-state.ts  |  11 ++
- frontend/src/srvcorp/entities/row-state.ts    |   7 ++
- .../row-header/row-header.component.html      |   2 +-
- .../row-header/row-header.component.ts        |   7 +-
- .../row-header/row-header.directive.ts        |   2 +-
- frontend/src/srvcorp/row/row.component.html   |   2 +-
- frontend/src/srvcorp/row/row.component.ts     |   9 +-
- .../src/srvcorp/table/table-body.directive.ts |   2 +-
- .../srvcorp/table/table-header.directive.ts   |   2 +-
- .../src/srvcorp/table/table.component.html    |  26 ++--
- frontend/src/srvcorp/table/table.component.ts | 118 ++++++++++++++++--
- 16 files changed, 195 insertions(+), 59 deletions(-)
- create mode 100644 frontend/src/srvcorp/animations/row-backlight.animation.ts
- delete mode 100644 frontend/src/srvcorp/animations/row-hover.animation.ts
- create mode 100644 frontend/src/srvcorp/entities/mouse-state.ts
- create mode 100644 frontend/src/srvcorp/entities/row-state.ts
+ frontend/src/app/app-routing.module.ts    |  2 +-
+ frontend/src/app/app.component.html       |  3 ++
+ frontend/src/assets/install.js            | 49 +++++++++++-----------
+ frontend/src/assets/manifest.json         |  7 ++--
+ frontend/src/assets/workbox/workbox-sw.js |  3 ++
+ frontend/src/index.html                   |  6 +++
+ frontend/src/service-worker.js            | 50 ++++++++++++++++++++++-
+ frontend/src/srvcorp/row/row.component.ts |  2 +-
+ 8 files changed, 92 insertions(+), 30 deletions(-)
+ create mode 100644 frontend/src/assets/workbox/workbox-sw.js
 
-diff --git a/frontend/src/srvcorp/animations/row-backlight.animation.ts b/frontend/src/srvcorp/animations/row-backlight.animation.ts
-new file mode 100644
-index 0000000..6f8bea9
---- /dev/null
-+++ b/frontend/src/srvcorp/animations/row-backlight.animation.ts
-@@ -0,0 +1,34 @@
-+import {animate, animateChild, group, query, state, style, transition, trigger} from "@angular/animations";
-+
-+
-+export class RowBacklightAnimation {
-+  protected timings: string = '50ms ease-out';
-+  protected backgroundColorDefault: string = 'white';
-+  protected backgroundColorHover: string = '#ededed';
-+  protected backgroundColorSelected: string = '#e5e5e5';
-+  protected backgroundColorChecked: string = '#fffd83';
-+
-+  static build() {
-+    let a = new this();
-+    return trigger('backlightToggle', [
-+      state('clear', style({
-+        backgroundColor: a.backgroundColorDefault
-+      })),
-+      state('hover', style({
-+        backgroundColor: a.backgroundColorHover
-+      })),
-+      state('selected', style({
-+        backgroundColor: a.backgroundColorSelected
-+      })),
-+      state('checked', style({
-+        backgroundColor: a.backgroundColorChecked
-+      })),
-+      transition('* <=> *', [
-+        animate(a.timings)
-+      ]),
-+    ]);
-+  }
-+}
-+
-+export const rowBacklightAnimation = RowBacklightAnimation.build();
-+
-diff --git a/frontend/src/srvcorp/animations/row-hover.animation.ts b/frontend/src/srvcorp/animations/row-hover.animation.ts
-deleted file mode 100644
-index 6a571a5..0000000
---- a/frontend/src/srvcorp/animations/row-hover.animation.ts
-+++ /dev/null
-@@ -1,28 +0,0 @@
--import {animate, animateChild, group, query, state, style, transition, trigger} from "@angular/animations";
--
--
--export class RowHoverAnimation {
--    protected timings: string = '50ms ease-out';
--    protected backgroundColorDefault:string = 'white';
--    protected backgroundColorHover:string = '#ededed';
--    static build() {
--        let a = new this();
--        return trigger('hoverToggle', [
--            state('notHover', style({
--                backgroundColor: a.backgroundColorDefault
--            })),
--            state('hover', style({
--                backgroundColor: a.backgroundColorHover
--            })),
--            transition('notHover => hover', [
--                animate(a.timings)
--            ]),
--            transition('hover => notHover', [
--                animate(a.timings)
--            ]),
--        ]);
--    }
--}
--
--export const rowHoverAnimation = RowHoverAnimation.build();
--
-diff --git a/frontend/src/srvcorp/column-body/column-body.component.ts b/frontend/src/srvcorp/column-body/column-body.component.ts
-index e4ae9e4..1d50826 100644
---- a/frontend/src/srvcorp/column-body/column-body.component.ts
-+++ b/frontend/src/srvcorp/column-body/column-body.component.ts
-@@ -2,7 +2,7 @@ import {Component, Input, OnInit} from '@angular/core';
- import {DataType} from "../utils/data-type";
+diff --git a/frontend/src/app/app-routing.module.ts b/frontend/src/app/app-routing.module.ts
+index 58a9a42..5bd044b 100644
+--- a/frontend/src/app/app-routing.module.ts
++++ b/frontend/src/app/app-routing.module.ts
+@@ -5,7 +5,7 @@ import {MenuAdminComponent} from "./menu-table/menu-table.component";
+ import {AnimtestComponent} from "./animtest/animtest.component";
  
- @Component({
--  selector: 'td[srvcorp-column-header]',
-+  selector: '[srvcorpColumnBody]',
-   templateUrl: './column-body.component.html',
-   styleUrls: ['./column-body.component.css']
- })
-diff --git a/frontend/src/srvcorp/column-header/column-header.component.ts b/frontend/src/srvcorp/column-header/column-header.component.ts
-index 279c6bb..c041b88 100644
---- a/frontend/src/srvcorp/column-header/column-header.component.ts
-+++ b/frontend/src/srvcorp/column-header/column-header.component.ts
-@@ -4,7 +4,7 @@ import {TableHeaderDirective} from "../table/table-header.directive";
- import {ColumnHeaderDirective} from "./column-header.directive";
+ const routes: Routes = [
+-    { path: '', pathMatch: 'full', component: DashboardComponent },
++    { path: '', pathMatch: 'full', component: AnimtestComponent },
+     { path: 'dashboard', component: DashboardComponent },
+     { path: 'menu', component: MenuAdminComponent },
+     { path: 'animtest', component: AnimtestComponent }
+diff --git a/frontend/src/app/app.component.html b/frontend/src/app/app.component.html
+index 92731d6..88b4572 100644
+--- a/frontend/src/app/app.component.html
++++ b/frontend/src/app/app.component.html
+@@ -22,6 +22,9 @@
+             <main class="col-md-9 ml-sm-auto col-lg-10 px-4 mt-5">
+                 <router-outlet></router-outlet>
+                 <app-messagelog></app-messagelog>
++                <div id="installModal" class="card card-body p-1 m-2 position-fixed fixed-bottom" style="display: none;">
++                    <a href="#" >Установить приложение?</a>
++                </div>
+             </main>
+         </div>
+     </div>
+diff --git a/frontend/src/assets/install.js b/frontend/src/assets/install.js
+index a7fc8f4..9420434 100644
+--- a/frontend/src/assets/install.js
++++ b/frontend/src/assets/install.js
+@@ -1,19 +1,20 @@
  
- @Component({
--  selector: 'th[srvcorp-column-header]',
-+  selector: '[srvcorpColumnHeader]',
-   templateUrl: './column-header.component.html',
-   styleUrls: ['./column-header.component.css']
- })
-diff --git a/frontend/src/srvcorp/entities/mouse-state.ts b/frontend/src/srvcorp/entities/mouse-state.ts
-new file mode 100644
-index 0000000..2220f17
---- /dev/null
-+++ b/frontend/src/srvcorp/entities/mouse-state.ts
-@@ -0,0 +1,11 @@
-+
-+export enum MouseButtonState {
-+  free,
-+  pressed
++let installButtonCallback = function(e,th) {};
++function InstallAppToDevice(e) {
++    installButtonCallback(e,this);
 +}
-+
-+export class MouseState {
-+  firstButton: MouseButtonState = MouseButtonState.free;
-+  secondButton: MouseButtonState = MouseButtonState.free;
-+  thirdButton: MouseButtonState = MouseButtonState.free;
-+}
-\ No newline at end of file
-diff --git a/frontend/src/srvcorp/entities/row-state.ts b/frontend/src/srvcorp/entities/row-state.ts
-new file mode 100644
-index 0000000..686c3e6
---- /dev/null
-+++ b/frontend/src/srvcorp/entities/row-state.ts
-@@ -0,0 +1,7 @@
-+
-+
-+export class RowState {
-+    hover:boolean;
-+    selected:boolean;
-+    checked:boolean;
-+}
-\ No newline at end of file
-diff --git a/frontend/src/srvcorp/row-header/row-header.component.html b/frontend/src/srvcorp/row-header/row-header.component.html
-index 10f8e60..d2f098b 100644
---- a/frontend/src/srvcorp/row-header/row-header.component.html
-+++ b/frontend/src/srvcorp/row-header/row-header.component.html
-@@ -1 +1 @@
--<div srvcorp-row-header-host></div>
-+<ng-content srvcorpRowHeaderHost></ng-content>
-\ No newline at end of file
-diff --git a/frontend/src/srvcorp/row-header/row-header.component.ts b/frontend/src/srvcorp/row-header/row-header.component.ts
-index f79675c..8766c4f 100644
---- a/frontend/src/srvcorp/row-header/row-header.component.ts
-+++ b/frontend/src/srvcorp/row-header/row-header.component.ts
-@@ -7,7 +7,7 @@ import {ColumnHeaderComponent} from "../column-header/column-header.component";
- import {ColumnBodyComponent} from "../column-body/column-body.component";
  
- @Component({
--  selector: 'tr[srvcorp-row-header]',
-+  selector: '[srvcorpRowHeader]',
-   templateUrl: './row-header.component.html',
-   styleUrls: ['./row-header.component.css']
- })
-@@ -18,9 +18,12 @@ export class RowHeaderComponent implements OnInit {
-   constructor(private componentFactoryResolver: ComponentFactoryResolver) { }
+-setTimeout((function () {
++(function () {
+   let deferredPrompt;
  
-   ngOnInit() {
--    this.loadComponent();
-+    //this.loadComponent();
+-  console.log(2);
+-
+-  let installModal = document.getElementById("installModal");
+-  let installButton = document.getElementById("installButton");
+-
+   function showModal() {
++    let installModal = document.getElementById("installModal");
+     installModal.style.display = 'block';
+     installModal.style.opacity = 1;
    }
  
-+  /**
-+   * @deprecated
-+   */
-   private loadComponent() {
-     let headerColumnFactory = this.componentFactoryResolver.resolveComponentFactory(ColumnHeaderComponent);
+   function hideModal() {
++    let installModal = document.getElementById("installModal");
+     installModal.style.display = 'none';
+     installModal.style.opacity = 0;
+   }
+@@ -24,28 +25,30 @@ setTimeout((function () {
+     // Stash the event so it can be triggered later.
+     deferredPrompt = e;
  
-diff --git a/frontend/src/srvcorp/row-header/row-header.directive.ts b/frontend/src/srvcorp/row-header/row-header.directive.ts
-index 93f4b44..7b2381f 100644
---- a/frontend/src/srvcorp/row-header/row-header.directive.ts
-+++ b/frontend/src/srvcorp/row-header/row-header.directive.ts
-@@ -1,7 +1,7 @@
- import {Directive, ElementRef, ViewContainerRef} from "@angular/core";
+-    console.log(3);
++    alert("BeforeInstallPromt event work!");
+     // Update UI notify the user they can add to home screen
+     //btnAdd.style.display = 'block';
+     showModal();
+   });
  
- @Directive({
--    selector: '[srvcorp-row-header-host]',
-+    selector: '[srvcorpRowHeaderHost]',
- })
- export class RowHeaderDirective {
-     constructor(public elementRef: ViewContainerRef) { }
-diff --git a/frontend/src/srvcorp/row/row.component.html b/frontend/src/srvcorp/row/row.component.html
-index 48ea94b..404b445 100644
---- a/frontend/src/srvcorp/row/row.component.html
-+++ b/frontend/src/srvcorp/row/row.component.html
-@@ -1 +1 @@
--<div srvcorp-row-host></div>
-+<ng-content srvcorp-row-host></ng-content>
+-  installButton.addEventListener('click', (e) => {
+-    hideModal();
+-    // Show the prompt
+-    deferredPrompt.prompt();
+-    // Wait for the user to respond to the prompt
+-    deferredPrompt.userChoice
+-      .then((choiceResult) => {
+-        if (choiceResult.outcome === 'accepted') {
+-          console.log('User accepted the A2HS prompt');
+-        } else {
+-          console.log('User dismissed the A2HS prompt');
+-        }
+-        deferredPrompt = null;
+-      });
+-  });
+-}),2000);
++
++  installButtonCallback = function (e, th) {
++      hideModal();
++      // Show the prompt
++      deferredPrompt.prompt();
++      // Wait for the user to respond to the prompt
++      deferredPrompt.userChoice
++          .then((choiceResult) => {
++              if (choiceResult.outcome === 'accepted') {
++                  console.log('User accepted the A2HS prompt');
++              } else {
++                  console.log('User dismissed the A2HS prompt');
++              }
++              deferredPrompt = null;
++          });
++  };
++
++})();
+ 
+ if ('serviceWorker' in navigator) {
+   navigator.serviceWorker.register('/service-worker.js', { scope: '/' }).then(function(reg) {
+diff --git a/frontend/src/assets/manifest.json b/frontend/src/assets/manifest.json
+index 6227df0..beed390 100644
+--- a/frontend/src/assets/manifest.json
++++ b/frontend/src/assets/manifest.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "Angular Admin",
+-  "short_name": "angular admin",
++  "short_name": "AngularAdm",
+   "theme_color": "#2196f3",
+   "background_color": "#2196f3",
+   "display": "fullscreen",
+   "orientation": "portrait",
+   "Scope": "/",
+-  "start_url": "/animtest",
++  "start_url": "/",
+   "icons": [
+     {
+       "src": "images/icons/icon-72x72.png",
+@@ -48,6 +48,5 @@
+       "sizes": "512x512",
+       "type": "image/png"
+     }
+-  ],
+-  "splash_pages": null
++  ]
+ }
+diff --git a/frontend/src/assets/workbox/workbox-sw.js b/frontend/src/assets/workbox/workbox-sw.js
+new file mode 100644
+index 0000000..d4b46cd
+--- /dev/null
++++ b/frontend/src/assets/workbox/workbox-sw.js
+@@ -0,0 +1,3 @@
++!function(){"use strict";try{self["workbox:sw:4.3.1"]&&_()}catch(t){}const t="/assets/workbox",e={backgroundSync:"background-sync",broadcastUpdate:"broadcast-update",cacheableResponse:"cacheable-response",core:"core",expiration:"expiration",googleAnalytics:"offline-ga",navigationPreload:"navigation-preload",precaching:"precaching",rangeRequests:"range-requests",routing:"routing",strategies:"strategies",streams:"streams"};self.workbox=new class{constructor(){return this.v={},this.t={debug:"localhost"===self.location.hostname,modulePathPrefix:null,modulePathCb:null},this.s=this.t.debug?"dev":"prod",this.o=!1,new Proxy(this,{get(t,s){if(t[s])return t[s];const o=e[s];return o&&t.loadModule(`workbox-${o}`),t[s]}})}setConfig(t={}){if(this.o)throw new Error("Config must be set before accessing workbox.* modules");Object.assign(this.t,t),this.s=this.t.debug?"dev":"prod"}loadModule(t){const e=this.i(t);try{importScripts(e),this.o=!0}catch(s){throw console.error(`Unable to import module '${t}' from '${e}'.`),s}}i(e){if(this.t.modulePathCb)return this.t.modulePathCb(e,this.t.debug);let s=[t];const o=`${e}.${this.s}.js`,r=this.t.modulePathPrefix;return r&&""===(s=r.split("/"))[s.length-1]&&s.splice(s.length-1,1),s.push(o),s.join("/")}}}();
++//# sourceMappingURL=workbox-sw.js.map
++//https://storage.googleapis.com/workbox-cdn/releases/4.3.1
+\ No newline at end of file
+diff --git a/frontend/src/index.html b/frontend/src/index.html
+index 46ff0a6..d5ca7ad 100644
+--- a/frontend/src/index.html
++++ b/frontend/src/index.html
+@@ -6,6 +6,12 @@
+   <base href="/">
+   <meta name="theme-color" content="#007bff">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
++
++  <meta name="apple-mobile-web-app-capable" content="yes">
++  <meta name="apple-mobile-web-app-status-bar-style" content="#007bff">
++  <meta name="apple-mobile-web-app-title" content="AngularAdm">
++  <link rel="apple-touch-icon" href="/assets/images/icons/icon-152x152.png">
++
+   <link rel="manifest" href="assets/manifest.json">
+   <link rel="icon" type="image/x-icon" href="favicon.ico">
+   <link href="https://fonts.googleapis.com/css?family=Titillium+Web" rel="stylesheet">
+diff --git a/frontend/src/service-worker.js b/frontend/src/service-worker.js
+index 1080fb2..9d8909d 100644
+--- a/frontend/src/service-worker.js
++++ b/frontend/src/service-worker.js
+@@ -1,5 +1,53 @@
+-//importScripts('/cache-polyfill.js');
++importScripts('/assets/workbox/workbox-sw.js');
++
++if (workbox) {
++    console.log(`Yay! Workbox is loaded`);
++    workbox.routing.registerRoute(
++        new RegExp('.*\.js'),
++        new workbox.strategies.NetworkFirst()
++    );
++    workbox.routing.registerRoute(
++        // Cache CSS files.
++        /\.css$/,
++        // Use cache but update in the background.
++        new workbox.strategies.StaleWhileRevalidate({
++            // Use a custom cache name.
++            cacheName: 'css-cache',
++        })
++    );
++
++    workbox.routing.registerRoute(
++        // Cache image files.
++        /\.(?:png|jpg|jpeg|svg|gif)$/,
++        // Use the cache if it's available.
++        new workbox.strategies.CacheFirst({
++            // Use a custom cache name.
++            cacheName: 'image-cache',
++            plugins: [
++                new workbox.expiration.Plugin({
++                    // Cache only 20 images.
++                    maxEntries: 20,
++                    // Cache for a maximum of a week.
++                    maxAgeSeconds: 7 * 24 * 60 * 60,
++                })
++            ],
++        })
++    );
+ 
++    workbox.precaching.precacheAndRoute([
++        '/',
++        /*'/animtest',
++        '/dashboard',
++        '/menu',*/
++    ], {
++        directoryIndex: '/index.html',
++    });
++} else {
++    console.log(`Boo! Workbox didn't load`);
++}
++
++//importScripts('/cache-polyfill.js');
++/*
+ const CACHE_NAME = 'v0.0.1';
+ // Listen for install event, set callback
+ self.addEventListener('install', function(event) {
 diff --git a/frontend/src/srvcorp/row/row.component.ts b/frontend/src/srvcorp/row/row.component.ts
-index 18449e9..ac849b8 100644
+index ac849b8..d7dd62a 100644
 --- a/frontend/src/srvcorp/row/row.component.ts
 +++ b/frontend/src/srvcorp/row/row.component.ts
-@@ -5,10 +5,10 @@ import {RowDirective} from "./row.directive";
- import {ColumnComponent} from "../column/column.component";
- import {ColumnHeaderComponent} from "../column-header/column-header.component";
- import {ColumnBodyComponent} from "../column-body/column-body.component";
--import {rowHoverAnimation} from "../animations/row-hover.animation";
-+import {rowBacklightAnimation} from "../animations/row-backlight.animation";
- 
- @Component({
--  selector: 'tr[srvcorp-row]',
-+  selector: '[srvcorpRow]',
-   templateUrl: './row.component.html',
-   styleUrls: ['./row.component.css']
- })
-@@ -20,9 +20,12 @@ export class RowComponent implements OnInit {
-   constructor(private componentFactoryResolver: ComponentFactoryResolver) { }
- 
-   ngOnInit() {
--    this.loadComponent();
-+    //this.loadComponent();
-   }
- 
-+  /**
-+   * @deprecated
-+   */
-   private loadComponent() {
-     let bodyColumnFactory = this.componentFactoryResolver.resolveComponentFactory(ColumnBodyComponent);
- 
-diff --git a/frontend/src/srvcorp/table/table-body.directive.ts b/frontend/src/srvcorp/table/table-body.directive.ts
-index b34eca5..2e30b2a 100644
---- a/frontend/src/srvcorp/table/table-body.directive.ts
-+++ b/frontend/src/srvcorp/table/table-body.directive.ts
-@@ -1,7 +1,7 @@
- import {Directive, ElementRef, ViewContainerRef} from "@angular/core";
- 
- @Directive({
--    selector: '[srvcorp-table-body-host]',
-+    selector: '[srvcorpTableBodyHost]',
- })
- export class TableBodyDirective {
-     constructor(public elementRef: ViewContainerRef) { }
-diff --git a/frontend/src/srvcorp/table/table-header.directive.ts b/frontend/src/srvcorp/table/table-header.directive.ts
-index 84fafac..926d82e 100644
---- a/frontend/src/srvcorp/table/table-header.directive.ts
-+++ b/frontend/src/srvcorp/table/table-header.directive.ts
-@@ -1,7 +1,7 @@
- import {Directive, ElementRef, ViewContainerRef} from "@angular/core";
- 
- @Directive({
--    selector: '[srvcorp-table-header-host]',
-+    selector: '[srvcorpTableHeaderHost]',
- })
- export class TableHeaderDirective {
-     constructor(public elementRef: ViewContainerRef) { }
-diff --git a/frontend/src/srvcorp/table/table.component.html b/frontend/src/srvcorp/table/table.component.html
-index 94914f0..099c12a 100644
---- a/frontend/src/srvcorp/table/table.component.html
-+++ b/frontend/src/srvcorp/table/table.component.html
-@@ -1,14 +1,26 @@
- <table class="table">
--  <thead srvcorp-table-header-host>
--    <tr srvcorp-row-header [columns]="columns"></tr>
-+  <thead srvcorpTableHeaderHost>
-+    <tr srvcorpRowHeader [columns]="columns">
-+      <th srvcorpColumnHeader
-+          *ngFor="let column of columns; let i = index"
-+          [value]="column.title"
-+          [customContent]="column.header?column.header.elementRef:null"></th>
-+    </tr>
-   </thead>
--  <tbody srvcorp-table-body-host>
--    <tr srvcorp-row
-+  <tbody srvcorpTableBodyHost>
-+    <tr srvcorpRow
-         *ngFor="let dataItem of data; let i = index"
-         [dataItem]="dataItem"
-         [columns]="columns"
--        [@hoverToggle]="rows[i].hover ? 'hover' : 'notHover'"
--        (mouseenter)="rows[i].hover=true"
--        (mouseleave)="rows[i].hover=false"></tr>
-+        [@backlightToggle]="getRowStateName(i)"
-+        (mousedown)="rowMouseDown($event, i)"
-+        (mouseup)="rowMouseUp($event, i)"
-+        (mouseenter)="rowMouseEnter($event, i)"
-+        (mouseleave)="rowMouseLeave($event, i)">
-+      <td srvcorpColumnBody
-+          *ngFor="let column of columns; let i = index"
-+          [value]="dataItem[column.field]"
-+          [dataType]="column.dataType"></td>
-+    </tr>
-   </tbody>
- </table>
-diff --git a/frontend/src/srvcorp/table/table.component.ts b/frontend/src/srvcorp/table/table.component.ts
-index fdc383e..1d88bad 100644
---- a/frontend/src/srvcorp/table/table.component.ts
-+++ b/frontend/src/srvcorp/table/table.component.ts
-@@ -2,12 +2,12 @@ import {
-   AfterContentInit,
-   Component,
-   ComponentFactoryResolver,
--  ContentChildren,
-+  ContentChildren, HostListener,
-   Input,
--  OnInit, QueryList,
-+  OnInit,
-+  QueryList,
-   ViewChild
- } from '@angular/core';
--import {Menu} from "../../app/entities/menu";
- import {TableHeaderDirective} from "./table-header.directive";
- import {TableBodyDirective} from "./table-body.directive";
- import {ColumnComponent} from "../column/column.component";
-@@ -15,28 +15,33 @@ import {ColumnHeaderComponent} from "../column-header/column-header.component";
- import {ColumnBodyComponent} from "../column-body/column-body.component";
- import {RowComponent} from "../row/row.component";
- import {RowHeaderComponent} from "../row-header/row-header.component";
--import {rowHoverAnimation} from "../animations/row-hover.animation";
-+import {rowBacklightAnimation} from "../animations/row-backlight.animation";
-+import {RowState} from "../entities/row-state";
-+import {MouseButtonState, MouseState} from "../entities/mouse-state";
- 
- @Component({
-   selector: 'srvcorp-table',
-   templateUrl: './table.component.html',
-   styleUrls: ['./table.component.css'],
--  animations: [rowHoverAnimation]
-+  animations: [rowBacklightAnimation]
- })
- export class TableComponent implements OnInit, AfterContentInit {
--  @Input() data:any[];
-+  @Input() data: any[];
-   @ViewChild(TableHeaderDirective) headerHost: TableHeaderDirective;
-   @ViewChild(TableBodyDirective) bodyHost: TableBodyDirective;
-   @ContentChildren(ColumnComponent) columns: QueryList<ColumnComponent>;
--  rows: any[];
-+  rowsStates: RowState[];
-+  mouseState: MouseState = new MouseState();
-+  rowSelectState:boolean = false;
-+  rowSelectStartIndex:number = -1;
- 
--  constructor(private componentFactoryResolver: ComponentFactoryResolver) { }
-+  constructor(private componentFactoryResolver: ComponentFactoryResolver) {}
- 
-   ngOnInit() {
--      this.rows = [];
--      this.data.forEach((dataItem, i, ar) => {
--          this.rows.push({hover: false});//TODO: need move to class
--      });
-+    this.rowsStates = [];
-+    this.data.forEach((dataItem, i, ar) => {
-+      this.rowsStates.push(new RowState());
-+    });
-   }
- 
-   ngAfterContentInit(): void {
-@@ -44,6 +49,95 @@ export class TableComponent implements OnInit, AfterContentInit {
-     //this.loadComponent();
-   }
- 
-+  getRowStateName(index:number):string {
-+    let row = this.rowsStates[index];
-+    if (row.checked) {
-+      return 'checked';
-+    } else if (row.selected) {
-+      return 'selected';
-+    } else if (row.hover) {
-+      return 'hover';
-+    }
-+    return 'clear';
-+  }
-+
-+  rowMouseEnter(event, index:number) {
-+    this.mouseStateUpdate(event);
-+    this.rowsStates[index].hover=true;
-+    if (this.getMouseFirstButtonState(event)) {
-+      if ( index!=this.rowSelectStartIndex) {
-+        let i = 0;
-+        if (this.rowSelectStartIndex > index) {
-+          i = 1;
-+        } else if (this.rowSelectStartIndex < index) {
-+          i = -1;
-+        }
-+        this.rowsStates[index+i].checked = this.rowSelectState;
-+      }
-+      this.rowsStates[index].checked = this.rowSelectState;
-+    }
-+  }
-+
-+  rowMouseLeave(event, index:number) {
-+    this.mouseStateUpdate(event);
-+    this.rowsStates[index].hover=false;
-+    if (this.getMouseFirstButtonState(event) && index!=this.rowSelectStartIndex) {
-+      this.rowsStates[index].checked = !this.rowSelectState;
-+    }
-+  }
-+
-+  rowMouseDown(event, index:number) {
-+    this.mouseStateUpdate(event);
-+    this.rowSelectStartIndex = index;
-+    if (this.getMouseFirstButtonState(event)) {
-+      this.rowSelectState = !this.rowsStates[index].checked;
-+      this.rowsStates[index].checked = this.rowSelectState;
-+    }
-+  }
-+
-+  rowMouseUp(event, index:number) {
-+    this.mouseStateUpdate(event);
-+    this.mouseState.firstButton = MouseButtonState.free;
-+  }
-+
-+  @HostListener('window:mouseup', ['$event'])
-+  mouseUp(event){
-+    this.mouseState.firstButton = MouseButtonState.free;
-+  }
-+
-+  private mouseStateUpdate(event) {
-+    if (this.getMouseFirstButtonState(event)) {
-+      this.mouseState.firstButton = MouseButtonState.pressed;
-+    } else {
-+      this.mouseState.firstButton = MouseButtonState.free;
-+    }
-+    if (this.getMouseSecondButtonState(event)) {
-+      this.mouseState.secondButton = MouseButtonState.pressed;
-+    } else {
-+      this.mouseState.secondButton = MouseButtonState.free;
-+    }
-+    if (this.getMouseThirdButtonState(event)) {
-+      this.mouseState.thirdButton = MouseButtonState.pressed;
-+    } else {
-+      this.mouseState.thirdButton = MouseButtonState.free;
-+    }
-+  }
-+
-+  private getMouseFirstButtonState(event) {
-+    return (event.buttons & 1) == 1;
-+  }
-+
-+  private getMouseSecondButtonState(event) {
-+    return (event.buttons & 1) == 1;
-+  }
-+
-+  private getMouseThirdButtonState(event) {
-+    return (event.buttons & 1) == 1;
-+  }
-+
-+  /**
-+   * @deprecated
-+   */
-   private loadComponent() {
-     let headerColumnFactory = this.componentFactoryResolver.resolveComponentFactory(ColumnHeaderComponent);
-     let bodyColumnFactory = this.componentFactoryResolver.resolveComponentFactory(ColumnBodyComponent);
--- 
-2.19.2.windows.1
-
-__FILES_SPLITTER__From 030cb8f8115a60ab140e8cfc278d7f6dcc477d8e Mon Sep 17 00:00:00 2001
-From: "sarvar" <sarkhas@mail.ru>
-Date: Wed, 15 May 2019 15:43:34 +0500
-Subject: [PATCH 2/3] body column custom template made
-
----
- .../column-body/column-body.component.html    |  3 ++-
- .../column-body/column-body.component.ts      | 19 +++++++++++++++++--
- .../column-body/column-body.directive.ts      |  8 ++++++++
- frontend/src/srvcorp/srvcorp.module.ts        |  4 +++-
- .../src/srvcorp/table/table.component.html    |  3 ++-
- 5 files changed, 32 insertions(+), 5 deletions(-)
- create mode 100644 frontend/src/srvcorp/column-body/column-body.directive.ts
-
-diff --git a/frontend/src/srvcorp/column-body/column-body.component.html b/frontend/src/srvcorp/column-body/column-body.component.html
-index f0136f9..b42df3a 100644
---- a/frontend/src/srvcorp/column-body/column-body.component.html
-+++ b/frontend/src/srvcorp/column-body/column-body.component.html
-@@ -1 +1,2 @@
--<div>{{value}}</div>
-+<div *ngIf="!customContent">{{value}}</div>
-+<div srvcorpColumnBodyHost></div>
-diff --git a/frontend/src/srvcorp/column-body/column-body.component.ts b/frontend/src/srvcorp/column-body/column-body.component.ts
-index 1d50826..06559b2 100644
---- a/frontend/src/srvcorp/column-body/column-body.component.ts
-+++ b/frontend/src/srvcorp/column-body/column-body.component.ts
-@@ -1,18 +1,33 @@
--import {Component, Input, OnInit} from '@angular/core';
-+import {AfterContentInit, Component, Input, OnInit, TemplateRef, ViewChild} from '@angular/core';
- import {DataType} from "../utils/data-type";
-+import {ColumnHeaderDirective} from "../column-header/column-header.directive";
-+import {ColumnBodyDirective} from "./column-body.directive";
- 
- @Component({
-   selector: '[srvcorpColumnBody]',
-   templateUrl: './column-body.component.html',
-   styleUrls: ['./column-body.component.css']
- })
--export class ColumnBodyComponent implements OnInit {
-+export class ColumnBodyComponent implements OnInit, AfterContentInit {
-   @Input() value: String;
-   @Input() dataType: DataType;
-+  @Input() customContent: TemplateRef<any>;
-+  @ViewChild(ColumnBodyDirective) columnBodyHost: ColumnBodyDirective;
- 
-   constructor() { }
- 
-   ngOnInit() {
-   }
- 
-+  ngAfterContentInit(): void {
-+    this.loadComponent();
-+  }
-+
-+  private loadComponent() {
-+    if (!this.customContent)
-+      return;
-+    let viewRef = this.columnBodyHost.elementRef;
-+    viewRef.clear();
-+    viewRef.createEmbeddedView(this.customContent,{$val:this.value});
-+  }
- }
-diff --git a/frontend/src/srvcorp/column-body/column-body.directive.ts b/frontend/src/srvcorp/column-body/column-body.directive.ts
-new file mode 100644
-index 0000000..714155e
---- /dev/null
-+++ b/frontend/src/srvcorp/column-body/column-body.directive.ts
-@@ -0,0 +1,8 @@
-+import {Directive, ElementRef, TemplateRef, ViewContainerRef} from "@angular/core";
-+
-+@Directive({
-+    selector: '[srvcorpColumnBodyHost]',
-+})
-+export class ColumnBodyDirective {
-+    constructor(public elementRef: ViewContainerRef) { }
-+}
-diff --git a/frontend/src/srvcorp/srvcorp.module.ts b/frontend/src/srvcorp/srvcorp.module.ts
-index b9a5291..7968067 100644
---- a/frontend/src/srvcorp/srvcorp.module.ts
-+++ b/frontend/src/srvcorp/srvcorp.module.ts
-@@ -15,6 +15,7 @@ import {CellComponent} from "./cell/cell.component";
- import {HeaderDirective} from "./column/header.directive";
- import {CellDirective} from "./column/cell.directive";
- import {ColumnHeaderDirective} from "./column-header/column-header.directive";
-+import {ColumnBodyDirective} from "./column-body/column-body.directive";
- 
- @NgModule({
-   declarations: [
-@@ -32,7 +33,8 @@ import {ColumnHeaderDirective} from "./column-header/column-header.directive";
-     CellComponent,
-     HeaderDirective,
-     CellDirective,
--    ColumnHeaderDirective
-+    ColumnHeaderDirective,
-+    ColumnBodyDirective
-   ],
-   exports: [
-     TableComponent,
-diff --git a/frontend/src/srvcorp/table/table.component.html b/frontend/src/srvcorp/table/table.component.html
-index 099c12a..5cf9cc0 100644
---- a/frontend/src/srvcorp/table/table.component.html
-+++ b/frontend/src/srvcorp/table/table.component.html
-@@ -20,7 +20,8 @@
-       <td srvcorpColumnBody
-           *ngFor="let column of columns; let i = index"
-           [value]="dataItem[column.field]"
--          [dataType]="column.dataType"></td>
-+          [dataType]="column.dataType"
-+          [customContent]="column.cell?column.cell.elementRef:null"></td>
-     </tr>
-   </tbody>
- </table>
--- 
-2.19.2.windows.1
-
-__FILES_SPLITTER__From 8016a72bb6d12338eace74d9b1a17a5d1db2732c Mon Sep 17 00:00:00 2001
-From: "sarvar" <sarkhas@mail.ru>
-Date: Wed, 15 May 2019 17:09:01 +0500
-Subject: [PATCH 3/3] row and cell hover effects
-
----
- .../app/menu-table/menu-table.component.html  | 11 +++--
- .../animations/cell-backlight.animation.ts    | 35 ++++++++++++++
- .../animations/row-backlight.animation.ts     | 12 ++---
- .../src/srvcorp/column/column.component.ts    |  1 +
- frontend/src/srvcorp/entities/cell-state.ts   |  7 +++
- frontend/src/srvcorp/entities/row-state.ts    |  2 +-
- .../src/srvcorp/table/table.component.html    | 15 +++---
- frontend/src/srvcorp/table/table.component.ts | 48 +++++++++++++++++--
- 8 files changed, 107 insertions(+), 24 deletions(-)
- create mode 100644 frontend/src/srvcorp/animations/cell-backlight.animation.ts
- create mode 100644 frontend/src/srvcorp/entities/cell-state.ts
-
-diff --git a/frontend/src/app/menu-table/menu-table.component.html b/frontend/src/app/menu-table/menu-table.component.html
-index b8fb6cb..aacc09d 100644
---- a/frontend/src/app/menu-table/menu-table.component.html
-+++ b/frontend/src/app/menu-table/menu-table.component.html
-@@ -1,9 +1,10 @@
- 
--<srvcorp-table [data]="menu">
--  <srvcorp-column field="id" dataType="number" title="ID"></srvcorp-column>
--  <srvcorp-column field="name" dataType="string" title="Name"></srvcorp-column>
--  <srvcorp-column field="url" dataType="string" title="URL">
-+<h1>Menu table</h1>
-+<srvcorp-table [data]="menu" [columnCount]="3">
-+  <srvcorp-column field="id" [dataType]="number" title="ID"></srvcorp-column>
-+  <srvcorp-column field="name" [dataType]="string" title="Name" [editable]="true"></srvcorp-column>
-+  <srvcorp-column field="url" [dataType]="string" title="URL" [editable]="true">
-     <ng-template srvcorpHeader>URL custom</ng-template>
--    <ng-template srvcorpCell let-val>Cell custom {{val}}</ng-template>
-+    <ng-template srvcorpCell let-val="$val">Cell custom {{val}}</ng-template>
-   </srvcorp-column>
- </srvcorp-table>
-diff --git a/frontend/src/srvcorp/animations/cell-backlight.animation.ts b/frontend/src/srvcorp/animations/cell-backlight.animation.ts
-new file mode 100644
-index 0000000..c1d7081
---- /dev/null
-+++ b/frontend/src/srvcorp/animations/cell-backlight.animation.ts
-@@ -0,0 +1,35 @@
-+import {animate, animateChild, group, query, state, style, transition, trigger} from "@angular/animations";
-+
-+
-+export class CellBacklightAnimation {
-+  protected timings: string = '50ms ease-out';
-+  protected backgroundColorDefault: string = '#ffffff00';
-+  protected backgroundColorHover: string = '#ededed';
-+  protected backgroundColorActive: string = '#e5e5e5';
-+  protected backgroundColorSelected: string = '#e5e5e5';
-+  protected borderColorSelected: string = '#fffd83';
-+
-+  static build() {
-+    let a = new this();
-+    return trigger('cellBacklightToggle', [
-+      state('clear', style({
-+        backgroundColor: a.backgroundColorDefault
-+      })),
-+      state('hover', style({
-+        backgroundColor: a.backgroundColorHover
-+      })),
-+      state('active', style({
-+        backgroundColor: a.backgroundColorActive
-+      })),
-+      state('selected', style({
-+        backgroundColor: a.backgroundColorSelected
-+      })),
-+      /*transition('* <=> *', [
-+        animate(a.timings)
-+      ]),*/
-+    ]);
-+  }
-+}
-+
-+export const cellBacklightAnimation = CellBacklightAnimation.build();
-+
-diff --git a/frontend/src/srvcorp/animations/row-backlight.animation.ts b/frontend/src/srvcorp/animations/row-backlight.animation.ts
-index 6f8bea9..730541a 100644
---- a/frontend/src/srvcorp/animations/row-backlight.animation.ts
-+++ b/frontend/src/srvcorp/animations/row-backlight.animation.ts
-@@ -5,27 +5,27 @@ export class RowBacklightAnimation {
-   protected timings: string = '50ms ease-out';
-   protected backgroundColorDefault: string = 'white';
-   protected backgroundColorHover: string = '#ededed';
--  protected backgroundColorSelected: string = '#e5e5e5';
-+  protected backgroundColorActive: string = '#e5e5e5';
-   protected backgroundColorChecked: string = '#fffd83';
- 
-   static build() {
-     let a = new this();
--    return trigger('backlightToggle', [
-+    return trigger('rowBacklightToggle', [
-       state('clear', style({
-         backgroundColor: a.backgroundColorDefault
-       })),
-       state('hover', style({
-         backgroundColor: a.backgroundColorHover
-       })),
--      state('selected', style({
--        backgroundColor: a.backgroundColorSelected
-+      state('active', style({
-+        backgroundColor: a.backgroundColorActive
-       })),
-       state('checked', style({
-         backgroundColor: a.backgroundColorChecked
-       })),
--      transition('* <=> *', [
-+      /*transition('* <=> *', [
-         animate(a.timings)
--      ]),
-+      ]),*/
-     ]);
-   }
- }
-diff --git a/frontend/src/srvcorp/column/column.component.ts b/frontend/src/srvcorp/column/column.component.ts
-index c3d7974..a798731 100644
---- a/frontend/src/srvcorp/column/column.component.ts
-+++ b/frontend/src/srvcorp/column/column.component.ts
-@@ -14,6 +14,7 @@ export class ColumnComponent implements OnInit, AfterContentInit {
-   @Input() field: string;
-   @Input() dataType: DataType;
-   @Input() title: string;
-+  @Input() editable: boolean = false;
-   @ContentChild(HeaderDirective) header: HeaderDirective;
-   @ContentChild(CellDirective) cell: CellDirective;
- 
-diff --git a/frontend/src/srvcorp/entities/cell-state.ts b/frontend/src/srvcorp/entities/cell-state.ts
-new file mode 100644
-index 0000000..3bc3005
---- /dev/null
-+++ b/frontend/src/srvcorp/entities/cell-state.ts
-@@ -0,0 +1,7 @@
-+
-+
-+export class CellState {
-+  hover:boolean;
-+  active:boolean;
-+  selected:boolean;
-+}
-\ No newline at end of file
-diff --git a/frontend/src/srvcorp/entities/row-state.ts b/frontend/src/srvcorp/entities/row-state.ts
-index 686c3e6..8dc7672 100644
---- a/frontend/src/srvcorp/entities/row-state.ts
-+++ b/frontend/src/srvcorp/entities/row-state.ts
-@@ -2,6 +2,6 @@
- 
- export class RowState {
-     hover:boolean;
--    selected:boolean;
-+    active:boolean;
-     checked:boolean;
- }
-\ No newline at end of file
-diff --git a/frontend/src/srvcorp/table/table.component.html b/frontend/src/srvcorp/table/table.component.html
-index 5cf9cc0..140f019 100644
---- a/frontend/src/srvcorp/table/table.component.html
-+++ b/frontend/src/srvcorp/table/table.component.html
-@@ -12,16 +12,17 @@
-         *ngFor="let dataItem of data; let i = index"
-         [dataItem]="dataItem"
-         [columns]="columns"
--        [@backlightToggle]="getRowStateName(i)"
--        (mousedown)="rowMouseDown($event, i)"
--        (mouseup)="rowMouseUp($event, i)"
--        (mouseenter)="rowMouseEnter($event, i)"
--        (mouseleave)="rowMouseLeave($event, i)">
-+        [@rowBacklightToggle]="getRowStateName(i)">
-       <td srvcorpColumnBody
--          *ngFor="let column of columns; let i = index"
-+          *ngFor="let column of columns; let j = index"
-           [value]="dataItem[column.field]"
-           [dataType]="column.dataType"
--          [customContent]="column.cell?column.cell.elementRef:null"></td>
-+          [customContent]="column.cell?column.cell.elementRef:null"
-+          [@cellBacklightToggle]="getCellStateName(i,j)"
-+          (mousedown)="cellMouseDown($event, i, j)"
-+          (mouseup)="cellMouseUp($event, i, j)"
-+          (mouseenter)="cellMouseEnter($event, i, j)"
-+          (mouseleave)="cellMouseLeave($event, i, j)"></td>
-     </tr>
-   </tbody>
- </table>
-diff --git a/frontend/src/srvcorp/table/table.component.ts b/frontend/src/srvcorp/table/table.component.ts
-index 1d88bad..75de9f1 100644
---- a/frontend/src/srvcorp/table/table.component.ts
-+++ b/frontend/src/srvcorp/table/table.component.ts
-@@ -18,19 +18,23 @@ import {RowHeaderComponent} from "../row-header/row-header.component";
- import {rowBacklightAnimation} from "../animations/row-backlight.animation";
- import {RowState} from "../entities/row-state";
- import {MouseButtonState, MouseState} from "../entities/mouse-state";
-+import {CellState} from "../entities/cell-state";
-+import {cellBacklightAnimation} from "../animations/cell-backlight.animation";
- 
- @Component({
-   selector: 'srvcorp-table',
-   templateUrl: './table.component.html',
-   styleUrls: ['./table.component.css'],
--  animations: [rowBacklightAnimation]
-+  animations: [rowBacklightAnimation, cellBacklightAnimation]
- })
- export class TableComponent implements OnInit, AfterContentInit {
-   @Input() data: any[];
-+  @Input() columnCount: number;
-   @ViewChild(TableHeaderDirective) headerHost: TableHeaderDirective;
-   @ViewChild(TableBodyDirective) bodyHost: TableBodyDirective;
-   @ContentChildren(ColumnComponent) columns: QueryList<ColumnComponent>;
-   rowsStates: RowState[];
-+  cellsStates: CellState[][];
-   mouseState: MouseState = new MouseState();
-   rowSelectState:boolean = false;
-   rowSelectStartIndex:number = -1;
-@@ -39,13 +43,18 @@ export class TableComponent implements OnInit, AfterContentInit {
- 
-   ngOnInit() {
-     this.rowsStates = [];
-+    this.cellsStates = [];
-     this.data.forEach((dataItem, i, ar) => {
-+      let cellsRow = [];
-+      for(let i=0;i<this.columnCount; i++) {
-+        cellsRow.push(new CellState());
-+      }
-+      this.cellsStates.push(cellsRow);
-       this.rowsStates.push(new RowState());
+@@ -34,7 +34,7 @@ export class RowComponent implements OnInit {
+     this.columns.forEach((item,index,array)=>{
+       let bodyColumn = rowRef.createComponent(bodyColumnFactory);
+       bodyColumn.instance.value = this.dataItem[item.field];
+-      bodyColumn.instance.dataType = item.dataType;
++      bodyColumn.instance.dataType = item.fieldType;
      });
    }
- 
-   ngAfterContentInit(): void {
--    console.log(this.columns);
-     //this.loadComponent();
-   }
- 
-@@ -53,14 +62,26 @@ export class TableComponent implements OnInit, AfterContentInit {
-     let row = this.rowsStates[index];
-     if (row.checked) {
-       return 'checked';
--    } else if (row.selected) {
--      return 'selected';
-+    } else if (row.active) {
-+      return 'active';
-     } else if (row.hover) {
-       return 'hover';
-     }
-     return 'clear';
-   }
- 
-+  getCellStateName(rowIndex:number, cellIndex:number):string {
-+    let cell = this.cellsStates[rowIndex][cellIndex];
-+    if (cell.active) {
-+      return 'active';
-+    } else if (cell.selected) {
-+      return 'selected';
-+    } else if (cell.hover) {
-+      return 'hover';
-+    }
-+    return 'clear';
-+  }
-+
-   rowMouseEnter(event, index:number) {
-     this.mouseStateUpdate(event);
-     this.rowsStates[index].hover=true;
-@@ -97,7 +118,24 @@ export class TableComponent implements OnInit, AfterContentInit {
- 
-   rowMouseUp(event, index:number) {
-     this.mouseStateUpdate(event);
--    this.mouseState.firstButton = MouseButtonState.free;
-+  }
-+
-+  cellMouseEnter(event, rowIndex:number, cellIndex:number) {
-+    this.rowMouseEnter(event,rowIndex);
-+    this.cellsStates[rowIndex][cellIndex].hover=true;
-+  }
-+
-+  cellMouseLeave(event, rowIndex:number, cellIndex:number) {
-+    this.rowMouseLeave(event,rowIndex);
-+    this.cellsStates[rowIndex][cellIndex].hover=false;
-+  }
-+
-+  cellMouseDown(event, rowIndex:number, cellIndex:number) {
-+    this.rowMouseDown(event,rowIndex);
-+  }
-+
-+  cellMouseUp(event, rowIndex:number, cellIndex:number) {
-+    this.rowMouseUp(event,rowIndex);
-   }
- 
-   @HostListener('window:mouseup', ['$event'])
+ }
 -- 
 2.19.2.windows.1
 
