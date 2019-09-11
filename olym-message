@@ -1,0 +1,29 @@
+<script>
+    (function () {
+        function setCookie(name, value, hours) {
+            if (hours) {
+                var date = new Date();
+                date.setTime(date.getTime() + (hours * 60 * 60 * 1000));
+                var expires = "; expires=" + date.toGMTString();
+            } else {
+                var expires = "";
+            }
+
+            document.cookie = name + "=" + value + expires + "; path=/";
+        }
+
+        // возвращает куки с указанным name,
+        // или undefined, если ничего не найдено
+        function getCookie(name) {
+            let matches = document.cookie.match(new RegExp(
+                "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+            ));
+            return matches ? decodeURIComponent(matches[1]) : undefined;
+        }
+
+        if (!getCookie('m_app_move')) {
+            alert('Кук нет');
+            setCookie('m_app_move','1',4);
+        }
+    })();
+</script>
