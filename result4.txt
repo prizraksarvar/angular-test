@@ -1,219 +1,72 @@
-From f007b891a1cb9f05da86cd3483a63368c05ea895 Mon Sep 17 00:00:00 2001
-From: "sarvar" <sarkhas@mail.ru>
-Date: Mon, 10 Jun 2019 14:37:52 +0500
-Subject: [PATCH] test back xml parse
+#include "stdafx.h"
+#include <iostream>
+#include <fstream>
+#include <mutex>
+#include <thread>
+#include <vector>
+#include <string>
+#include <ctype.h>
 
----
- backend/package.json                          |  4 +-
- .../src/components/test/test-controller.ts    | 24 ++++++
- backend/src/core/Application.ts               | 85 ++++++++++---------
- backend/src/index.ts                          |  2 +
- frontend/src/service-worker.js                | 21 ++++-
- 5 files changed, 89 insertions(+), 47 deletions(-)
- create mode 100644 backend/src/components/test/test-controller.ts
+std::mutex mtx;
+static int counter = 0;
+static const int MAX_COUNTER_VAL = 100;
 
-diff --git a/backend/package.json b/backend/package.json
-index 21124f3..0e88097 100644
---- a/backend/package.json
-+++ b/backend/package.json
-@@ -17,6 +17,7 @@
-     "@babel/preset-typescript": "^7.3.3",
-     "@types/bcryptjs": "^2.4.2",
-     "@types/express": "^4.16.1",
-+    "@types/xml2js": "^0.4.4",
-     "bcryptjs": "^2.4.3",
-     "concurrently": "^4.1.0",
-     "express": "^4.16.4",
-@@ -26,6 +27,7 @@
-     "ts-node-dev": "^1.0.0-pre.32",
-     "tslint": "^5.13.0",
-     "typeorm": "^0.2.14",
--    "typescript": "^3.3.3333"
-+    "typescript": "^3.3.3333",
-+    "xml2js": "^0.4.19"
-   }
- }
-diff --git a/backend/src/components/test/test-controller.ts b/backend/src/components/test/test-controller.ts
-new file mode 100644
-index 0000000..45bf02b
---- /dev/null
-+++ b/backend/src/components/test/test-controller.ts
-@@ -0,0 +1,24 @@
-+import {Controller} from "../../core/component/controller";
-+import {RouteMiddlewareTypes} from "../../core/component/route-middleware-types";
-+import {RequestInterface} from "../../core/http/request-interface";
-+import {ResponseInterface} from "../../core/http/response-interface";
-+import {NextFunction} from "../../core/http/next.function";
-+import {getRepository} from "typeorm";
-+import {readFile} from "fs";
-+import {parseString} from "xml2js";
-+
-+export class TestController extends Controller {
-+  initMiddleware(): void {
-+    this.registerRouteMiddleware(RouteMiddlewareTypes.get, "/test", this.getItems);
-+  }
-+
-+  private getItems(request: RequestInterface, response: ResponseInterface, next: NextFunction) {
-+    readFile('internet.rss', function(err, data) {
-+      parseString(data, function (err:any, result:any) {
-+        response.send({
-+          test: result
-+        });
-+      });
-+    });
-+  }
-+}
-\ No newline at end of file
-diff --git a/backend/src/core/Application.ts b/backend/src/core/Application.ts
-index 0a16aad..7cf66e8 100644
---- a/backend/src/core/Application.ts
-+++ b/backend/src/core/Application.ts
-@@ -9,48 +9,49 @@ import {ResponseInterface} from "./http/response-interface";
- import {DefaultRequestState} from "./http/default-request.state";
- import {MiddlewareHandlerAdapter} from "./http/middleware-handler-adapter";
- 
-+const config = require('./../../config.json');
- 
- export class Application {
--    private connection: Connection;
--    private server: Express;
--    private controllers: Controller[];
--
--    static create():Promise<Application> {
--        return new Promise<Application>((resolve,reject)=>{
--            let app = new Application();
--            database.then((connection)=>{
--                console.log('DB connected');
--                app.connection = connection;
--                serverStarter(8080, '127.0.0.1').then((server)=>{
--                    console.log('server started and listening on port 8080');
--                    app.server = server;
--                    server.use(MiddlewareHandlerAdapter.handler(Application.prepareRequest));
--                    resolve(app);
--                }).catch(reject);
--            }).catch(reject);
--        });
--    }
--
--    protected static prepareRequest(request:RequestInterface, response:ResponseInterface, next:NextFunction) {
--        request.state = new DefaultRequestState();
--        next();
--    }
--
--    public registerController(controller:Controller) {
--        controller.setApplication(this);
--        controller.init();
--        this.controllers.push(controller);
--    }
--
--    public getServer() {
--        return this.server;
--    }
--
--    public getConnecion() {
--        return this.connection;
--    }
--
--    protected constructor() {
--        this.controllers = [];
--    }
-+  private connection: Connection;
-+  private server: Express;
-+  private controllers: Controller[];
-+
-+  static create(): Promise<Application> {
-+    return new Promise<Application>((resolve, reject) => {
-+      let app = new Application();
-+      database.then((connection) => {
-+        console.log('DB connected');
-+        app.connection = connection;
-+        serverStarter(config.port, config.host).then((server) => {
-+          console.log('server started and listening on port ' + config.port);
-+          app.server = server;
-+          server.use(MiddlewareHandlerAdapter.handler(Application.prepareRequest));
-+          resolve(app);
-+        }).catch(reject);
-+      }).catch(reject);
-+    });
-+  }
-+
-+  protected static prepareRequest(request: RequestInterface, response: ResponseInterface, next: NextFunction) {
-+    request.state = new DefaultRequestState();
-+    next();
-+  }
-+
-+  public registerController(controller: Controller) {
-+    controller.setApplication(this);
-+    controller.init();
-+    this.controllers.push(controller);
-+  }
-+
-+  public getServer() {
-+    return this.server;
-+  }
-+
-+  public getConnecion() {
-+    return this.connection;
-+  }
-+
-+  protected constructor() {
-+    this.controllers = [];
-+  }
- }
-\ No newline at end of file
-diff --git a/backend/src/index.ts b/backend/src/index.ts
-index 0cadfe0..dd149f0 100644
---- a/backend/src/index.ts
-+++ b/backend/src/index.ts
-@@ -4,9 +4,11 @@ import {comparePassword, cryptPassword} from "./core/helpers/password.helper";
- import serverStarter from "./core/server";
- import {Application} from "./core/application";
- import {AutorizationController} from "./components/autorization/autorization-controller";
-+import {TestController} from "./components/test/test-controller";
- 
- //cryptPassword("testPass123").then((value => console.log(value)));
- 
- let app = Application.create().then((app)=>{
-     app.registerController(new AutorizationController());
-+    app.registerController(new TestController());
- });
-diff --git a/frontend/src/service-worker.js b/frontend/src/service-worker.js
-index 9d8909d..dee5815 100644
---- a/frontend/src/service-worker.js
-+++ b/frontend/src/service-worker.js
-@@ -34,14 +34,27 @@ if (workbox) {
-         })
-     );
- 
--    workbox.precaching.precacheAndRoute([
-+    workbox.routing.registerNavigationRoute(
-+        // Assuming '/single-page-app.html' has been precached,
-+        // look up its corresponding cache key.
-+        workbox.precaching.getCacheKeyForURL('/index.html') /*, {
-+            whitelist: [
-+                new RegExp('/blog/')
-+            ],
-+            blacklist: [
-+                new RegExp('/blog/restricted/'),
-+            ]
-+        }*/
-+    );
-+
-+    /*workbox.precaching.precacheAndRoute([
-         '/',
--        /*'/animtest',
-+        '/animtest',
-         '/dashboard',
--        '/menu',*/
-+        '/menu',
-     ], {
-         directoryIndex: '/index.html',
--    });
-+    });*/
- } else {
-     console.log(`Boo! Workbox didn't load`);
- }
--- 
-2.19.2.windows.1
+void thread_proc(int tnum) {
+	for (;;) {
+		{
+			std::lock_guard<std::mutex> lock(mtx);
+			if (counter == MAX_COUNTER_VAL)
+				break;
+			int ctr_val = ++counter;
+			std::cout << "Thread " << tnum << ": counter = " <<
+				ctr_val << std::endl;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+}
 
-__FILES_SPLITTER__
+int is_letter(char c)
+{
+	// return isalpha(c);
+	return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= 'а' && c <= 'я') || (c >= 'А' && c <= 'Я') || c == 'ё' || c == 'Ё');
+}
+
+void word_counter() {
+	std::ifstream fin("ReadMe.txt", std::ios::in | std::ios::_Nocreate);
+	std::string buffer;
+	char c;
+	while (fin.get(c)) {
+		if (c<0 || c>255) {
+			std::cout << c;
+		}
+		if (is_letter(c)) {
+			buffer += c;
+		}
+		else {
+			std::cout << buffer << std::endl;
+			buffer.clear();
+		}
+	}
+}
+
+int main() {
+	/*std::string s("string s");
+	std::cout << s.c_str() << " " << std::endl;
+	std::vector<std::thread> threads;
+	for (int i = 0; i < 10; i++) {
+		std::thread thr(thread_proc, i);
+		threads.emplace_back(std::move(thr));
+	}
+
+	// can't use const auto& here since .join() is not marked const
+	for (auto& thr : threads) {
+		thr.join();
+	}
+	*/
+
+	word_counter();
+
+	std::cout << "Done!" << std::endl;
+	std::cin.get();
+	return 0;
+}
