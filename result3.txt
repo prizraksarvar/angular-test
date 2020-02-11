@@ -1,274 +1,49 @@
-From 8d4a15aa0f08903620c17a1f97cff7603002a75a Mon Sep 17 00:00:00 2001
-From: "sarvar" <sarkhas@mail.ru>
-Date: Thu, 16 May 2019 17:47:25 +0500
-Subject: [PATCH] cell editor made
+#include "stdafx.h"
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <map>
+#include <chrono>
+#include <ctype.h>
+#include <algorithm>
 
----
- .../animations/cell-backlight.animation.ts    | 12 ++++--
- .../cell-editor/cell-editor.component.css     |  0
- .../cell-editor/cell-editor.component.html    |  4 ++
- .../cell-editor/cell-editor.component.ts      | 33 +++++++++++++++
- .../column-body/column-body.component.html    |  3 +-
- .../column-body/column-body.component.ts      |  1 +
- .../src/srvcorp/column/column.component.ts    |  2 +-
- frontend/src/srvcorp/srvcorp.module.ts        |  4 +-
- .../src/srvcorp/table/table.component.css     |  6 +++
- .../src/srvcorp/table/table.component.html    |  1 +
- frontend/src/srvcorp/table/table.component.ts | 41 ++++++++++++++++---
- 11 files changed, 94 insertions(+), 13 deletions(-)
- create mode 100644 frontend/src/srvcorp/cell-editor/cell-editor.component.css
- create mode 100644 frontend/src/srvcorp/cell-editor/cell-editor.component.html
- create mode 100644 frontend/src/srvcorp/cell-editor/cell-editor.component.ts
+using namespace std;
 
-diff --git a/frontend/src/srvcorp/animations/cell-backlight.animation.ts b/frontend/src/srvcorp/animations/cell-backlight.animation.ts
-index c1d7081..39d3df7 100644
---- a/frontend/src/srvcorp/animations/cell-backlight.animation.ts
-+++ b/frontend/src/srvcorp/animations/cell-backlight.animation.ts
-@@ -5,9 +5,11 @@ export class CellBacklightAnimation {
-   protected timings: string = '50ms ease-out';
-   protected backgroundColorDefault: string = '#ffffff00';
-   protected backgroundColorHover: string = '#ededed';
--  protected backgroundColorActive: string = '#e5e5e5';
--  protected backgroundColorSelected: string = '#e5e5e5';
--  protected borderColorSelected: string = '#fffd83';
-+  protected backgroundColorSelected: string = '#fffdbf';
-+  protected backgroundColorActive: string = '#fbfbfb';
-+  protected borderColorActive: string = '#ffd500';
-+
-+  protected border = '2px solid ';
- 
-   static build() {
-     let a = new this();
-@@ -19,7 +21,9 @@ export class CellBacklightAnimation {
-         backgroundColor: a.backgroundColorHover
-       })),
-       state('active', style({
--        backgroundColor: a.backgroundColorActive
-+        backgroundColor: a.backgroundColorActive,
-+        border: a.border+a.borderColorActive,
-+        padding: 0
-       })),
-       state('selected', style({
-         backgroundColor: a.backgroundColorSelected
-diff --git a/frontend/src/srvcorp/cell-editor/cell-editor.component.css b/frontend/src/srvcorp/cell-editor/cell-editor.component.css
-new file mode 100644
-index 0000000..e69de29
-diff --git a/frontend/src/srvcorp/cell-editor/cell-editor.component.html b/frontend/src/srvcorp/cell-editor/cell-editor.component.html
-new file mode 100644
-index 0000000..066d102
---- /dev/null
-+++ b/frontend/src/srvcorp/cell-editor/cell-editor.component.html
-@@ -0,0 +1,4 @@
-+<div *ngIf="isString()">{{value}} string editor</div>
-+<div *ngIf="isNumber()">{{value}} number editor</div>
-+<div *ngIf="isBoolean()">{{value}} bool editor</div>
-+<div *ngIf="isDate()">{{value}} date editor</div>
-\ No newline at end of file
-diff --git a/frontend/src/srvcorp/cell-editor/cell-editor.component.ts b/frontend/src/srvcorp/cell-editor/cell-editor.component.ts
-new file mode 100644
-index 0000000..64d815c
---- /dev/null
-+++ b/frontend/src/srvcorp/cell-editor/cell-editor.component.ts
-@@ -0,0 +1,33 @@
-+import {Component, Input, OnInit} from '@angular/core';
-+import {DataType} from "../utils/data-type";
-+
-+@Component({
-+  selector: 'srvcorp-cell-editor',
-+  templateUrl: './cell-editor.component.html',
-+  styleUrls: ['./cell-editor.component.css']
-+})
-+export class CellEditorComponent implements OnInit {
-+  @Input() value: String;
-+  @Input() dataType: DataType;
-+
-+  constructor() { }
-+
-+  ngOnInit() {
-+  }
-+
-+  isString() {
-+    return this.dataType=="string";
-+  }
-+
-+  isNumber() {
-+    return this.dataType=="number";
-+  }
-+
-+  isBoolean() {
-+    return this.dataType=="boolean";
-+  }
-+
-+  isDate() {
-+    return this.dataType=="date";
-+  }
-+}
-diff --git a/frontend/src/srvcorp/column-body/column-body.component.html b/frontend/src/srvcorp/column-body/column-body.component.html
-index b42df3a..e71b48a 100644
---- a/frontend/src/srvcorp/column-body/column-body.component.html
-+++ b/frontend/src/srvcorp/column-body/column-body.component.html
-@@ -1,2 +1,3 @@
--<div *ngIf="!customContent">{{value}}</div>
-+<div *ngIf="!customContent && !editMode">{{value}}</div>
-+<srvcorp-cell-editor *ngIf="!customContent && editMode" [value]="value" [dataType]="dataType"></srvcorp-cell-editor>
- <div srvcorpColumnBodyHost></div>
-diff --git a/frontend/src/srvcorp/column-body/column-body.component.ts b/frontend/src/srvcorp/column-body/column-body.component.ts
-index 06559b2..9e08075 100644
---- a/frontend/src/srvcorp/column-body/column-body.component.ts
-+++ b/frontend/src/srvcorp/column-body/column-body.component.ts
-@@ -11,6 +11,7 @@ import {ColumnBodyDirective} from "./column-body.directive";
- export class ColumnBodyComponent implements OnInit, AfterContentInit {
-   @Input() value: String;
-   @Input() dataType: DataType;
-+  @Input() editMode: boolean = false;
-   @Input() customContent: TemplateRef<any>;
-   @ViewChild(ColumnBodyDirective) columnBodyHost: ColumnBodyDirective;
- 
-diff --git a/frontend/src/srvcorp/column/column.component.ts b/frontend/src/srvcorp/column/column.component.ts
-index a798731..c28e8bb 100644
---- a/frontend/src/srvcorp/column/column.component.ts
-+++ b/frontend/src/srvcorp/column/column.component.ts
-@@ -24,7 +24,7 @@ export class ColumnComponent implements OnInit, AfterContentInit {
-   }
- 
-   ngAfterContentInit(): void {
--
-+    console.log(this.dataType);
-   }
- 
- }
-diff --git a/frontend/src/srvcorp/srvcorp.module.ts b/frontend/src/srvcorp/srvcorp.module.ts
-index 7968067..d853d9e 100644
---- a/frontend/src/srvcorp/srvcorp.module.ts
-+++ b/frontend/src/srvcorp/srvcorp.module.ts
-@@ -16,6 +16,7 @@ import {HeaderDirective} from "./column/header.directive";
- import {CellDirective} from "./column/cell.directive";
- import {ColumnHeaderDirective} from "./column-header/column-header.directive";
- import {ColumnBodyDirective} from "./column-body/column-body.directive";
-+import {CellEditorComponent} from "./cell-editor/cell-editor.component";
- 
- @NgModule({
-   declarations: [
-@@ -34,7 +35,8 @@ import {ColumnBodyDirective} from "./column-body/column-body.directive";
-     HeaderDirective,
-     CellDirective,
-     ColumnHeaderDirective,
--    ColumnBodyDirective
-+    ColumnBodyDirective,
-+    CellEditorComponent
-   ],
-   exports: [
-     TableComponent,
-diff --git a/frontend/src/srvcorp/table/table.component.css b/frontend/src/srvcorp/table/table.component.css
-index e69de29..d01f053 100644
---- a/frontend/src/srvcorp/table/table.component.css
-+++ b/frontend/src/srvcorp/table/table.component.css
-@@ -0,0 +1,6 @@
-+srvcorp-table {
-+    user-select: none;
-+    -moz-user-select: none;
-+    -webkit-user-select: none;
-+    -ms-user-select: none;
-+}
-\ No newline at end of file
-diff --git a/frontend/src/srvcorp/table/table.component.html b/frontend/src/srvcorp/table/table.component.html
-index 140f019..a1fbe3e 100644
---- a/frontend/src/srvcorp/table/table.component.html
-+++ b/frontend/src/srvcorp/table/table.component.html
-@@ -17,6 +17,7 @@
-           *ngFor="let column of columns; let j = index"
-           [value]="dataItem[column.field]"
-           [dataType]="column.dataType"
-+          [editMode]="column.editable && cellsStates[i][j].active"
-           [customContent]="column.cell?column.cell.elementRef:null"
-           [@cellBacklightToggle]="getCellStateName(i,j)"
-           (mousedown)="cellMouseDown($event, i, j)"
-diff --git a/frontend/src/srvcorp/table/table.component.ts b/frontend/src/srvcorp/table/table.component.ts
-index 75de9f1..859c866 100644
---- a/frontend/src/srvcorp/table/table.component.ts
-+++ b/frontend/src/srvcorp/table/table.component.ts
-@@ -20,6 +20,7 @@ import {RowState} from "../entities/row-state";
- import {MouseButtonState, MouseState} from "../entities/mouse-state";
- import {CellState} from "../entities/cell-state";
- import {cellBacklightAnimation} from "../animations/cell-backlight.animation";
-+import {forEach} from "@angular/router/src/utils/collection";
- 
- @Component({
-   selector: 'srvcorp-table',
-@@ -109,9 +110,10 @@ export class TableComponent implements OnInit, AfterContentInit {
- 
-   rowMouseDown(event, index:number) {
-     this.mouseStateUpdate(event);
--    this.rowSelectStartIndex = index;
-     if (this.getMouseFirstButtonState(event)) {
-+      this.rowSelectStartIndex = index;
-       this.rowSelectState = !this.rowsStates[index].checked;
-+      this.freeRowsCheckState();
-       this.rowsStates[index].checked = this.rowSelectState;
-     }
-   }
-@@ -131,16 +133,23 @@ export class TableComponent implements OnInit, AfterContentInit {
-   }
- 
-   cellMouseDown(event, rowIndex:number, cellIndex:number) {
--    this.rowMouseDown(event,rowIndex);
-+    //this.rowMouseDown(event,rowIndex);
-+    if (this.getMouseFirstButtonState(event)) {
-+      this.freeCellsActiveState();
-+      if (this.columns.toArray()[cellIndex].editable) {
-+        this.cellsStates[rowIndex][cellIndex].active = true;
-+      }
-+    }
-   }
- 
-   cellMouseUp(event, rowIndex:number, cellIndex:number) {
--    this.rowMouseUp(event,rowIndex);
-+    //this.rowMouseUp(event,rowIndex);
-   }
- 
-   @HostListener('window:mouseup', ['$event'])
-   mouseUp(event){
--    this.mouseState.firstButton = MouseButtonState.free;
-+    this.mouseStateUpdate(event);
-+    this.rowSelectStartIndex = -1;
-   }
- 
-   private mouseStateUpdate(event) {
-@@ -166,11 +175,31 @@ export class TableComponent implements OnInit, AfterContentInit {
-   }
- 
-   private getMouseSecondButtonState(event) {
--    return (event.buttons & 1) == 1;
-+    return (event.buttons & 2) == 1;
-   }
- 
-   private getMouseThirdButtonState(event) {
--    return (event.buttons & 1) == 1;
-+    return (event.buttons & 3) == 1;
-+  }
-+
-+  private freeRowsCheckState() {
-+    this.rowsStates.forEach((rowState)=>{
-+      rowState.checked = false;
-+    });
-+  }
-+
-+  private freeRowsActiveState() {
-+    this.rowsStates.forEach((rowState)=>{
-+      rowState.active = false;
-+    });
-+  }
-+
-+  private freeCellsActiveState() {
-+    this.cellsStates.forEach((row)=>{
-+      row.forEach((cellState)=>{
-+        cellState.active = false;
-+      });
-+    });
-   }
- 
-   /**
--- 
-2.19.2.windows.1
+inline int is_letter(char c)
+{
+	// return isalpha(c);
+	return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= 'а' && c <= 'я') || (c >= 'А' && c <= 'Я') || c == 'ё' || c == 'Ё');
+}
 
-__FILES_SPLITTER__
+void word_counter() {
+	ifstream fin("ReadMe.txt", ios::in | ios::_Nocreate);
+	map<string, int> words;
+	string buffer;
+	char c;
+	while (fin.get(c)) {
+		if (is_letter(c)) {
+			buffer += tolower(c);
+		}
+		else if (!buffer.empty()) {
+			//std::cout << buffer << std::endl;
+			
+			words[buffer]++;
+			buffer.clear();
+		}
+	}
+	for each (pair<string,int> p in words)
+	{
+		std::cout << p.first << "=" << p.second << std::endl;
+	}
+}
+
+int main() {
+	auto start = std::chrono::high_resolution_clock::now();
+
+	word_counter();
+
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::cout << "Completed in " << std::chrono::duration_cast<std::chrono::milliseconds>(finish - start).count() << " milliseconds" << std::endl;
+	std::cin.get();
+	return 0;
+}
